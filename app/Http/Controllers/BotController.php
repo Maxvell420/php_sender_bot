@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\ValData\Test;
+use Illuminate\Http\{Request, Response};
 
 class BotController extends Controller
 {
 
-    public function helloWorld(Test $data)
+    public function helloWorld(Request $request, Response $response)
     {
-        dd($data);
-        echo 1;
+        $values  = $this->buildVO(Test::class, $request->all());
+        return $values;
     }
 }
