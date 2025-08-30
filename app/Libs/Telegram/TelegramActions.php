@@ -1,0 +1,8 @@
+<?php
+
+namespace App\Libs\Telegram;
+
+enum TelegramActions: string
+{
+    case getUpdates = 'GetUpdates';
+}

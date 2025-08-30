@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
 use Throwable;
 use App\Http\Exceptions\ValidationException;
 
