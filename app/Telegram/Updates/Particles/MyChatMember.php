@@ -3,14 +3,28 @@
 namespace App\Telegram\Updates\Particles;
 
 use Spatie\LaravelData\Data;
-use App\Telegram\Updates\Particles;
 
 class MyChatMember extends Data
 {
 
     public function __construct(
-        public Particles\Chat $chat,
-        public Particles\From $from,
-        public Particles\NewChatMember $new_chat_member
+        public Chat $chat,
+        public From $from,
+        public NewChatMember $new_chat_member
     ) {}
+
+    public function getNewStatus(): string
+    {
+        return $this->new_chat_member->getStatus();
+    }
+
+    public function getUserName(): string
+    {
+        return $this->from->getUserName();
+    }
+
+    public function getUserId(): int
+    {
+        return $this->from->getUserId();
+    }
 }

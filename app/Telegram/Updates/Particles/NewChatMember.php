@@ -13,4 +13,9 @@ class NewChatMember extends Data
         #[Validation\Required, Validation\StringType]
         public string $status,
     ) {}
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
 }

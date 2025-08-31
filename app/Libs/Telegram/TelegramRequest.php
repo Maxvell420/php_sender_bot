@@ -9,19 +9,32 @@ class TelegramRequest
 
     public function __construct(private string $secret) {}
 
-    public function getUpdates(): array
+
+    /**
+     * Функция получения обновлений из telegram
+     * @param int $offset на самом деле это update_id
+     */
+    public function getUpdates(?int $offset = null): array
     {
-        $url = $this->buildUrlFromAction(TelegramActions::getUpdates);
+        $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset);
         return $this->sendRequest($url);
     }
 
-    private function buildUrlFromAction(TelegramActions $action): string
+    private function buildUrlFromAction(TelegramActions $action, ?int $offset): string
     {
+        $query = '';
+        if ($offset) {
+            $query = '?' . http_build_query([
+                'offset' => $offset,
+                'timeout' => 0,
+                'limit' => 10
+            ]);
+        }
         $tg_url = 'https://api.telegram.org';
         $secret = $this->secret;
 
         return match ($action) {
-            TelegramActions::getUpdates => "$tg_url/bot$secret/getUpdates",
+            TelegramActions::getUpdates => "$tg_url/bot$secret/getUpdates$query",
             default => throw new Exception('WRONG_ACTION', 404)
         };
     }

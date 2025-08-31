@@ -14,4 +14,14 @@ class From extends Data
         #[Validation\Required, Validation\StringType]
         public string $username,
     ) {}
+
+    public function getUserName(): string
+    {
+        return $this->username;
+    }
+
+    public function getUserId(): int
+    {
+        return $this->id;
+    }
 }
