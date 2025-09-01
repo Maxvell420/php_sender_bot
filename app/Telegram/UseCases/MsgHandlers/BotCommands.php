@@ -2,12 +2,27 @@
 
 namespace App\Telegram\UseCases\MsgHandlers;
 
+use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
-use App\Models\User;
+use App\Models\ {
+    User,
+    Post
+};
 use App\Telegram\Updates\Update;
 use App\Telegram\Enums;
+use App\Telegram\UseCases\InlineBuilder;
+use App\Telegram\UseCases\MessageBuilder;
 
 class BotCommands {
+
+    private TelegramRequest $telegramRequest;
+
+    public function __construct(
+        private InlineBuilder $inlineBuilder = new InlineBuilder,
+        private MessageBuilder $messageBuilder = new MessageBuilder,
+    ) {
+        $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
+    }
 
     public function handleUpdate(MessageUpdate $data): Update {
         $user_id = $data->findMessageFromId();
@@ -38,7 +53,16 @@ class BotCommands {
     }
 
     private function handleStart(MessageUpdate $data): void {
-        
+        $link = env('TG_CHANNEL_INVITE_LINK');
+        $message = new Post()->getStartText();
+        $file_id = env('TG_FILE_ID');
+        $user_id = $data->findMessageFromId();
+
+        $message = $this->messageBuilder->buildDocument($user_id, caption:$message, file_id:$file_id);
+        $this->telegramRequest->sendDocument($message);
+        // $buttons = [];
+        // $buttons[] = $this->inlineBuilder->buildUrlButton('Вступить в канал', $link);
+        // $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
     }
 
     private function handleUndefined(MessageUpdate $data): void {}
