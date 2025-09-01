@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::table(
             'users',
             function (Blueprint $table) {
-                $table->enum('kicked', ['yes', 'no']);
+                $table->enum('is_admin', ['yes', 'no'])->default('no');
             }
 
         );

@@ -6,15 +6,11 @@ use Throwable;
 use App\Http\Exceptions\ValidationException;
 use App\Telegram\Updates\Update as UpdateInterface;
 use App\Models\Update;
-
-abstract class UpdateHandler
-{
+abstract class UpdateHandler {
 
     protected string $class;
 
-    protected function buildVO(array $data)
-    {
-
+    protected function buildVO(array $data) {
         try {
             return $this->class::from($data);
         } catch (Throwable) {
@@ -22,11 +18,5 @@ abstract class UpdateHandler
         }
     }
 
-
-    protected function saveUpdate(UpdateInterface $data)
-    {
-        $update = new Update;
-        $update->update_id = $data->getUpdateId();
-        $update->save();
-    }
+    abstract public function handleUpdate(array $data): UpdateInterface;
 }
