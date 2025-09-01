@@ -11,8 +11,26 @@ class MessageUpdater extends UpdateHandler {
     protected string $class = MessageUpdate::class;
 
     public function handleUpdate(array $data): Update {
-        // dd($data);
+        /**
+            * @var MessageUpdate $values
+        */
         $values = $this->buildVO($data);
-        dd($values);
+
+        $user_id = $values->findMessageFromId();
+
+        if( !$user_id ) {
+            // Если пришло не от бота то как-то обработать
+            return $values;
+        }
+
+        if( $values->hasBotCommands() ) {
+            $handler = new MsgHandlers\BotCommands();
+            $handler->handleUpdate($values);
+        }
+        else {
+            // Дефолт сообщение
+        }
+
+        return $values;
     }
 }

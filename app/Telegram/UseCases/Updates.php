@@ -30,7 +30,7 @@ class Updates {
             Enums\UpdateType::MyChatMember => $this->myChatMember,
             Enums\UpdateType::Message => $this->messageUpdater
         };
-        dump($update);
+
         $values = $updater->handleUpdate($update);
 
         $this->saveUpdate($values);

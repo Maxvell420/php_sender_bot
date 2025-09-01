@@ -4,6 +4,7 @@ namespace App\Telegram\Updates\Particles;
 
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
+use Spatie\LaravelData\DataCollection;
 
 class Message extends Data {
 
@@ -15,11 +16,47 @@ class Message extends Data {
         public ?From $from = null,
         #[Validation\StringType]
         public ?string $text = null,
-        public ?Entities $entities = null
+        /**
+            * @var Entity[]|DataCollection
+        */
+        public ?DataCollection $entities = null
     ) {}
 
-    public function isBotCommand(): bool {
-        return $this?->entities->type == 'bot_command';
+    // Вот это вызывается если есть уверенность что from не Null
+    public function getUserId(): ?int {
+        return $this->from->getUserId();
+    }
+
+    public function getUserName(): string {
+        return $this->from->getUserName();
+    }
+
+    public function hasBotCommands(): bool {
+        if( !$this->entities ) {
+            return false;
+        }
+
+        $has_command = false;
+
+        /**
+            * @var Entity $entity
+        */
+
+        foreach($this->entities as $entity) {
+            if( $entity->isCommand() == 'bot_command' ) {
+                $has_command = true;
+            }
+        }
+
+        return $has_command;
+    }
+
+    public function findText(): ?string {
+        return $this->text;
+    }
+
+    public function findMessageFromId(): ?int {
+        return $this->from?->getUserId();
     }
 
     public function getMessageId(): int {
