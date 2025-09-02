@@ -3,17 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Libs\Telegram\TelegramRequest;
-use Illuminate\Http\{
+use Illuminate\Http\ {
     Request
 };
 use App\Telegram\UseCases\Updates;
 use App\Models\Update;
 
-class BotController extends Controller
-{
+class BotController extends Controller {
 
-    public function getUpdates()
-    {
+    public function getUpdates() {
         $secret = env('TG_BOT_SECRET');
         $telegram = new TelegramRequest($secret);
         $update = new Update();
@@ -22,8 +20,7 @@ class BotController extends Controller
         dd($response);
     }
 
-    public function testUpdates(Request $request)
-    {
+    public function testUpdates(Request $request) {
         $useCase = new Updates();
         $useCase->handleUpdates($request->all('result')['result']);
     }
