@@ -30,4 +30,9 @@ class MyChatMemberUpdate extends Data implements Update {
     public function getUpdateId(): int {
         return $this->update_id;
     }
+
+    public function hasFrom(): bool {
+        $from = $this->my_chat_member->from;
+        return isset($from);
+    }
 }

@@ -22,9 +22,8 @@ class Message extends Data {
         public ?DataCollection $entities = null
     ) {}
 
-    // Вот это вызывается если есть уверенность что from не Null
-    public function getUserId(): ?int {
-        return $this->from->getUserId();
+    public function getUserId(): int {
+        return (int) $this->from?->getUserId();
     }
 
     public function getUserName(): string {
