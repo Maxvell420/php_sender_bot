@@ -16,17 +16,28 @@ class MessageBuilder
         return $data;
     }
 
-    public function buildDocument(int $chat_id, string $caption, string $file_id, ?InlineKeyboard $keyboard = null): array
+    public function buildDocument(int $chat_id, ?string $caption = null, string $file_id, ?InlineKeyboard $keyboard = null): array
     {
-        $data = ['chat_id' => $chat_id, 'caption' => $caption, 'document' => $file_id];
-        $data = $this->handleParts($data, $keyboard);
+        $data = ['chat_id' => $chat_id, 'document' => $file_id];
+        $data = $this->handleParts($data, $keyboard, $caption);
         return $data;
     }
 
-    private function handleParts(array $data, ?InlineKeyboard $keyboard = null): array
+    public function buildPhoto(int $chat_id, ?string $caption = null, string $file_id, ?InlineKeyboard $keyboard = null): array
+    {
+        $data = ['chat_id' => $chat_id, 'photo' => $file_id];
+        $data = $this->handleParts($data, $keyboard, $caption);
+        return $data;
+    }
+
+    private function handleParts(array $data, ?InlineKeyboard $keyboard = null, ?string $caption = null): array
     {
         if ($keyboard && !$keyboard->isEmpty()) {
             $data['reply_markup'] = json_encode($keyboard->buildKeyboardData());
+        }
+
+        if ($caption) {
+            $data['caption'] = $caption;
         }
 
         return $data;

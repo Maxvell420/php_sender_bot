@@ -9,13 +9,13 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up(): void {
+    public function up(): void
+    {
         Schema::create(
             'states',
             function (Blueprint $table) {
                 $table->id();
-                $table->string('title', 255);
-                $table->foreignId('actor_id')->unique('user')->references('id')->on('users')->onDelete('cascade');
+                $table->integer('actor_id')->unique('actor_id');
                 $table->integer('state_id');
                 $table->json('json')->nullable();
                 $table->timestamps();
@@ -26,7 +26,8 @@ return new class extends Migration {
     /**
      * Reverse the migrations.
      */
-    public function down(): void {
+    public function down(): void
+    {
         Schema::dropIfExists('states');
     }
 };

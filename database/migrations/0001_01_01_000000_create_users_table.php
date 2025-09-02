@@ -21,7 +21,7 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->text('content');
-            $table->foreignId('actor_id')->references('id')->on('users')->onDelete('cascade');
+            $table->integer('actor_id');
             $table->timestamps();
         });
     }

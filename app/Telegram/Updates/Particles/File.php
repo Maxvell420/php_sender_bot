@@ -5,22 +5,20 @@ namespace App\Telegram\Updates\Particles;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
 
-class File extends Data {
+class File extends Data
+{
 
     public function __construct(
-        #[Validation\Required,
-        Validation\Numeric]
-        public int $id,
-        #[Validation\Required,
-        Validation\StringType]
-        public string $username,
+
+        #[
+            Validation\Required,
+            Validation\StringType
+        ]
+        public string $file_id,
     ) {}
 
-    public function getUserName(): string {
-        return $this->username;
-    }
-
-    public function getUserId(): int {
-        return $this->id;
+    public function getFileId(): int
+    {
+        return $this->file_id;
     }
 }

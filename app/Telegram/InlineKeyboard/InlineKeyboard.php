@@ -20,18 +20,19 @@ class InlineKeyboard
     {
         $keyboard = [];
         $buttons  = [];
-
         foreach ($this->buttons as $button) {
+            $data = [];
             foreach ($button as $property => $value) {
 
                 if ($value) {
-                    $buttons[$property] = $value;
+                    $data[$property] =  $value;
                 }
             }
+            $buttons[] = $data;
         }
 
         if (!empty($buttons)) {
-            $keyboard['inline_keyboard'] = [[$buttons]];
+            $keyboard['inline_keyboard'] = [$buttons];
         }
 
         return $keyboard;

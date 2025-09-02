@@ -28,4 +28,12 @@ class InlineBuilder
         $button->url = $url;
         return $button;
     }
+
+    public function buildDataButton(string $text, string $data): InlineButton
+    {
+        $button = new InlineButton;
+        $button->text = $text;
+        $button->callback_data = $data;
+        return $button;
+    }
 }
