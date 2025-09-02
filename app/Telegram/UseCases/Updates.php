@@ -48,8 +48,6 @@ class Updates {
                     $need_handle = $updater->handleUpdate($values, $state);
                 }
             }
-
-            $state->delete();
         }
 
         if( $need_handle ) {
