@@ -1,28 +1,32 @@
 <?php
 
 namespace App\Telegram\UseCases;
-use App\Telegram\InlineKeyboard\ {
+
+use App\Telegram\InlineKeyboard\{
     InlineKeyboard,
-    InlineButton
 };
 
-class MessageBuilder {
+class MessageBuilder
+{
 
-    public function buildMessage(int $chat_id, string $text, ?InlineKeyboard $keyboard = null, ?array $document = null): array {
+    public function buildMessage(int $chat_id, string $text, ?InlineKeyboard $keyboard = null): array
+    {
         $data = ['chat_id' => $chat_id, 'text' => $text];
-
-        if( $keyboard ) {
-            $data['reply_markup'] = $keyboard->buildKeyboardData();
-        }
-
+        $data = $this->handleParts($data, $keyboard);
         return $data;
     }
 
-    public function buildDocument(int $chat_id, string $caption, string $file_id, ?InlineKeyboard $keyboard = null): array {
+    public function buildDocument(int $chat_id, string $caption, string $file_id, ?InlineKeyboard $keyboard = null): array
+    {
         $data = ['chat_id' => $chat_id, 'caption' => $caption, 'document' => $file_id];
+        $data = $this->handleParts($data, $keyboard);
+        return $data;
+    }
 
-        if( $keyboard ) {
-            $data['reply_markup'] = $keyboard->buildKeyboardData();
+    private function handleParts(array $data, ?InlineKeyboard $keyboard = null): array
+    {
+        if ($keyboard && !$keyboard->isEmpty()) {
+            $data['reply_markup'] = json_encode($keyboard->buildKeyboardData());
         }
 
         return $data;

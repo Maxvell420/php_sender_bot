@@ -2,29 +2,43 @@
 
 namespace App\Telegram\InlineKeyboard;
 
-class InlineKeyboard {
+class InlineKeyboard
+{
 
     /**
-        * @var InlineButton[]
-    */
+     * @var InlineButton[]
+     */
 
-    public array $inline_keyboard = [];
+    public array $buttons = [];
 
-    public function addButton(InlineButton $button): void {
-        $this->inline_keyboard[] = $button;
+    public function addButton(InlineButton $button): void
+    {
+        $this->buttons[] = $button;
     }
 
-    public function buildKeyboardData(): array {
-        $data  = [];
+    public function buildKeyboardData(): array
+    {
+        $keyboard = [];
+        $buttons  = [];
 
-        foreach($this->inline_keyboard as $button) {
-            foreach($button as $property => $value) {
-                dd($property);
+        foreach ($this->buttons as $button) {
+            foreach ($button as $property => $value) {
 
-                if( $value ) {
-                    
+                if ($value) {
+                    $buttons[$property] = $value;
                 }
             }
         }
+
+        if (!empty($buttons)) {
+            $keyboard['inline_keyboard'] = [[$buttons]];
+        }
+
+        return $keyboard;
+    }
+
+    public function isEmpty(): bool
+    {
+        return empty($this->buttons);
     }
 }

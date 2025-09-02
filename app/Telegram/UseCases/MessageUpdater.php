@@ -6,31 +6,26 @@ use App\Telegram\Updates\MessageUpdate;
 use App\Models\User;
 use App\Telegram\Updates\Update;
 
-class MessageUpdater extends UpdateHandler {
-
-    protected string $class = MessageUpdate::class;
-
-    public function handleUpdate(array $data): Update {
+class MessageUpdater extends UpdateHandler
+{
+    public function handleUpdate(Update $values): void
+    {
         /**
-            * @var MessageUpdate $values
-        */
-        $values = $this->buildVO($data);
+         * @var MessageUpdate $values
+         */
 
         $user_id = $values->findMessageFromId();
 
-        if( !$user_id ) {
+        if (!$user_id) {
             // Если пришло не от бота то как-то обработать
-            return $values;
+            return;
         }
 
-        if( $values->hasBotCommands() ) {
+        if ($values->hasBotCommands()) {
             $handler = new MsgHandlers\BotCommands();
             $handler->handleUpdate($values);
-        }
-        else {
+        } else {
             // Дефолт сообщение
         }
-
-        return $values;
     }
 }
