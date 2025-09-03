@@ -54,7 +54,7 @@ class BotCommands {
         };
     }
 
-    private function handleStart(MessageUpdate $data, User $user): void {
+    public function handleStart(MessageUpdate $data, User $user): void {
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');

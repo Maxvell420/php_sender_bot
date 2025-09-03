@@ -16,14 +16,15 @@ class Demon {
         while( true ) {
             $update = new Update();
             $update_id = $update->getNextUpdateId();
-            $updates = $telegram->getUpdates($update_id, 1);
+            $updates = $telegram->getUpdates($update_id, 5);
+            print('приняты обновления' . "\n");
 
             if( empty($updates['result']) ) {
-                sleep(2);
+                print('обновлений нет' . "\n");
                 continue;
-                print('обновлений нет');
             }
 
+            print('обновления есть' . "\n");
             $useCase->handleUpdates($updates['result']);
         }
     }

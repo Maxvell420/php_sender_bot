@@ -40,6 +40,7 @@ class StateUpdater {
             $document = $update->getDocument();
             $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
             $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
+            $handled = true;
         }
         elseif( $update->hasPhoto() ) {
             $photo = $update->getPhoto();
