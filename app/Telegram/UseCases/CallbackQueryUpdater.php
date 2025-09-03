@@ -20,8 +20,6 @@ class CallbackQueryUpdater {
         $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
     }
 
-    // Здесь будет парсится Update в зависимости от Енама
-    //  Прятать клавиатуру не забыть
     public function handleUpdate(CallbackQueryUpdate $update): void {
         $data = $update->getData();
 
@@ -31,7 +29,7 @@ class CallbackQueryUpdater {
         };
     }
 
-    // пока что всегда работает
+    // пока что всегда работает без callBack
     private function handleCreatePost(CallbackQueryUpdate $update, string $callback): void {
         $user_id = $update->getUserId();
         $state = new State();
