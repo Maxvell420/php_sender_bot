@@ -10,6 +10,7 @@ use App\Models\{
     State
 };
 use App\Telegram\Updates\{
+    CallbackQueryUpdate,
     MyChatMemberUpdate,
     MessageUpdate
 };
@@ -36,10 +37,14 @@ class Updates
         [$updater, $values] = match ($case) {
             Enums\UpdateType::MyChatMember => [new MyChatMemberUpdater, $this->buildVO(MyChatMemberUpdate::class, $update)],
             Enums\UpdateType::Message => [new MessageUpdater, $this->buildVO(MessageUpdate::class, $update)],
+            Enums\UpdateType::CallbackQuery => [new CallbackQueryUpdater, $this->buildVO(CallbackQueryUpdate::class, $update)]
         };
 
+
+        dd($values);
         $need_handle = true;
 
+        // Проверить что наличие State не мешает обрабатывать кнопки
         if ($values->hasFrom()) {
             // если нашли юзера и у него есть state то первое действие это всегда state
             $values->getUserId();

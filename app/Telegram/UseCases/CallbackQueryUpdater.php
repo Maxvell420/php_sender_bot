@@ -5,10 +5,10 @@ namespace App\Telegram\UseCases;
 use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
 use App\Models\State;
-use App\Telegram\{Enums, Values};
+use App\Telegram\Enums;
 use App\Telegram\InlineKeyboard\InlineKeyboard;
 
-class StateUpdater
+class CallbackQueryUpdater
 {
     private TelegramRequest $telegramRequest;
 
@@ -19,6 +19,8 @@ class StateUpdater
         $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
     }
 
+    // Здесь будет парсится Update в зависимости от Енама
+    //  Прятать клавиатуру не забыть
     public function handleUpdate(MessageUpdate $update, State $state): bool
     {
         return match ($state->state_id) {
@@ -31,21 +33,20 @@ class StateUpdater
     {
         // Передавать в Request Енам чтобы вызывать функцию Отправить данные
         $handled = false;
-        $keyboard = $this->buildCreatePostKeyboard();
         $user_id = $state->actor_id;
         if ($update->hasDocument()) {
             $document = $update->getDocument();
-            $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
+            $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id);
             $this->telegramRequest->sendDocument($message);
         } elseif ($update->hasPhoto()) {
             $photo = $update->getPhoto();
             $file = array_pop($photo);
-            $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id'], $keyboard);
+            $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id']);
             $this->telegramRequest->sendPhoto($message);
             $handled = true;
         } elseif ($update->hasText()) {
             $text = $update->findText();
-            $message = $this->messageBuilder->buildMessage($user_id, $text, $keyboard);
+            $message = $this->messageBuilder->buildMessage($user_id, $text);
             $this->telegramRequest->sendMessage($message);
             $handled = true;
         }
@@ -54,15 +55,5 @@ class StateUpdater
             // $state->delete();
         }
         return $handled;
-    }
-
-    private function buildCreatePostKeyboard(): InlineKeyboard
-    {
-        $yesData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'yes');
-        $noData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'no');
-        $yesButton = $this->inlineBuilder->buildDataButton('Да', json_encode($yesData));
-        $noButton = $this->inlineBuilder->buildDataButton('Нет', json_encode($noData));
-        $keyboard = $this->inlineBuilder->buildKeyboard([$yesButton, $noButton]);
-        return $keyboard;
     }
 }

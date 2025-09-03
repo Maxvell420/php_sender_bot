@@ -25,7 +25,7 @@ class Message extends Data
         public ?DataCollection $entities = null,
         public ?array $photo = null,
         public ?Document $document = null,
-        public ?string $caption = null
+        public ?string $caption = null,
     ) {}
 
     public function getUserId(): int
@@ -87,5 +87,10 @@ class Message extends Data
     public function hasText(): bool
     {
         return (bool) $this->text;
+    }
+
+    public function hasDataAndInstance(): bool
+    {
+        return (bool) ($this->chat_instance && $this->data);
     }
 }
