@@ -32,7 +32,7 @@ class StateUpdater {
 
     private function handleCreatePost(MessageUpdate $update, State $state): bool {
         // Передавать в Request Енам чтобы вызывать функцию Отправить данные
-        $handled = false;
+        $not_handled = true;
         $keyboard = $this->buildCreatePostKeyboard();
         $user_id = $state->actor_id;
 
@@ -40,27 +40,27 @@ class StateUpdater {
             $document = $update->getDocument();
             $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
             $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
-            $handled = true;
+            $not_handled = false;
         }
         elseif( $update->hasPhoto() ) {
             $photo = $update->getPhoto();
             $file = array_pop($photo);
             $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id'], $keyboard);
             $this->telegramRequest->sendMessage(TelegramActions::sendPhoto, $message);
-            $handled = true;
+            $not_handled = false;
         }
         elseif( $update->hasText() ) {
             $text = $update->findText();
             $message = $this->messageBuilder->buildMessage($user_id, $text, $keyboard);
             $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
-            $handled = true;
+            $not_handled = false;
         }
 
-        if( $handled ) {
+        if( !$not_handled ) {
             $state->delete();
         }
 
-        return $handled;
+        return $not_handled;
     }
 
     private function buildCreatePostKeyboard(): InlineKeyboard {

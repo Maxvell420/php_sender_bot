@@ -52,7 +52,7 @@ class Updates {
             }
         }
 
-        if( !$need_handle ) {
+        if( $need_handle ) {
             $updater->handleUpdate($values);
         }
 
