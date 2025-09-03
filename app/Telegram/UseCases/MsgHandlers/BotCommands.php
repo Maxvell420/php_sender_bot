@@ -13,6 +13,7 @@ use App\Telegram\Updates\Update;
 use App\Telegram\Enums;
 use App\Telegram\UseCases\InlineBuilder;
 use App\Telegram\UseCases\MessageBuilder;
+use App\Telegram\Values\CallbackDataValues;
 
 class BotCommands {
 
@@ -39,21 +40,21 @@ class BotCommands {
 
         foreach(Enums\Commands::cases() as $case) {
             if( str_contains($text, $case->value) ) {
-                $this->handleCommand($case, $data);
+                $this->handleCommand($case, $data, $user);
             }
         }
 
         return $data;
     }
 
-    private function handleCommand(Enums\Commands $case, MessageUpdate $data): void {
+    private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void {
         match ($case) {
-            Enums\Commands::Start => $this->handleStart($data),
+            Enums\Commands::Start => $this->handleStart($data, $user),
             default => ''
         };
     }
 
-    private function handleStart(MessageUpdate $data): void {
+    private function handleStart(MessageUpdate $data, User $user): void {
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');
@@ -61,6 +62,12 @@ class BotCommands {
 
         $buttons = [];
         $buttons[] = $this->inlineBuilder->buildUrlButton('Вступить в канал', $link);
+
+        if( $user->isAdmin() ) {
+            $callbackData = new CallbackDataValues(Enums\Callback::CreatePost, 'yes');
+            $buttons[] = $this->inlineBuilder->buildDataButton('Создать пост', json_encode($callbackData));
+        }
+
         $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
 
         $message = $this->messageBuilder->buildDocument($user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);

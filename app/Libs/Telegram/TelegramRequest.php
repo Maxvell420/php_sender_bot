@@ -14,8 +14,8 @@ class TelegramRequest {
      * Функция получения обновлений из telegram
      * @param int $offset на самом деле это update_id
      */
-    public function getUpdates(?int $offset = null): array {
-        $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset);
+    public function getUpdates(?int $offset = null, ?int $timeout = null): array {
+        $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset, $timeout);
         return $this->sendRequest($url);
     }
 
@@ -26,8 +26,12 @@ class TelegramRequest {
         $this->sendRequest($url, $data);
     }
 
-    private function buildUrlFromAction(TelegramActions $action, ?int $offset = null): string {
+    private function buildUrlFromAction(TelegramActions $action, ?int $offset = null, ?int $timeout = null): string {
         $query = '';
+
+        if( !$timeout ) {
+            $timeout = 30;
+        }
 
         if( $offset ) {
             $query = '?' . http_build_query(
@@ -69,7 +73,6 @@ class TelegramRequest {
         $response = curl_exec($curl);
 
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        dd($response);
 
         if( $httpCode === 200 ) {
             return json_decode($response, true);

@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property int $tg_id
  * @property string $user_name
  * @property string $kicked
+ * @property string $is_admin
  */
 
 class User extends Authenticatable {
@@ -25,6 +26,7 @@ class User extends Authenticatable {
         'kicked',
         'created_at',
         'updated_at',
+        'is_admin'
     ];
 
     public function findByTgId(int $tg_id): ?User {
@@ -41,6 +43,10 @@ class User extends Authenticatable {
 
     public function setMember(): void {
         $this->kicked = 'no';
+    }
+
+    public function isAdmin(): bool {
+        return $this->is_admin == 'yes';
     }
 
     public function listActiveUsers(): Collection {

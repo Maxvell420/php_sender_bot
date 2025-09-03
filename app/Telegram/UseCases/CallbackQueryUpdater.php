@@ -4,13 +4,10 @@ namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
 use App\Libs\Telegram\TelegramRequest;
-use App\Telegram\Updates\MessageUpdate;
 use App\Models\State;
 use App\Models\User;
 use App\Telegram\Enums;
-use App\Telegram\InlineKeyboard\InlineKeyboard;
 use App\Telegram\Updates\CallbackQueryUpdate;
-use App\Telegram\Values\CallbackDataValues;
 
 class CallbackQueryUpdater {
 
@@ -30,7 +27,27 @@ class CallbackQueryUpdater {
 
         match ($data->callback) {
             Enums\Callback::SendPost => $this->handleSendPost($update, $data->data),
+            Enums\Callback::CreatePost => $this->handleCreatePost($update, $data->data)
         };
+    }
+
+    // пока что всегда работает
+    private function handleCreatePost(CallbackQueryUpdate $update, string $callback): void {
+        $user_id = $update->getUserId();
+        $state = new State();
+        $existed_state = $state->findByUser($user_id);
+
+        if( $existed_state ) {
+            $message = $this->messageBuilder->buildMessage($user_id, 'Уже жду пост для отправки');
+        }
+        else {
+            $message = $this->messageBuilder->buildMessage($user_id, 'Жду пост для отправки');
+            $state->actor_id = $user_id;
+            $state->state_id = Enums\States::Create_post->value;
+            $state->save();
+        }
+
+        $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
     }
 
     private function handleSendPost(CallbackQueryUpdate $update, string $callback): void {
