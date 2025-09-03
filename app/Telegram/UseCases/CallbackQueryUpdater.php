@@ -65,29 +65,41 @@ class CallbackQueryUpdater {
         $user = new User;
 
         $users = $user->listActiveUsers();
+        // Как-то подправить эту штуку чтобы не изменять message
+        if( $update->hasDocument() ) {
+            $document = $update->getDocument();
+            $action = TelegramActions::sendDocument;
+            $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id);
+        }
+        elseif( $update->hasPhoto() ) {
+            $photo = $update->getPhoto();
+            $file = array_pop($photo);
+            $action = TelegramActions::sendPhoto;
+            $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id']);
+        }
+        elseif( $update->hasText() ) {
+            $text = $update->getText();
+            $action = TelegramActions::sendMessage;
+            $message = $this->messageBuilder->buildMessage($user_id, $text);
+        }
+
+        $count = 0;
 
         foreach($users as $user) {
-            if( $update->hasDocument() ) {
-                $document = $update->getDocument();
-                $action = TelegramActions::sendDocument;
-                $message = $this->messageBuilder->buildDocument($user->tg_id, $update->getCaption(), $document->file_id);
+            if( $user_id == $user->tg_id ) {
+                continue;
             }
-            elseif( $update->hasPhoto() ) {
-                $photo = $update->getPhoto();
-                $file = array_pop($photo);
-                $action = TelegramActions::sendPhoto;
-                $message = $this->messageBuilder->buildPhoto($user->tg_id, $update->getCaption(), $file['file_id']);
-            }
-            elseif( $update->hasText() ) {
-                $text = $update->getText();
-                $action = TelegramActions::sendMessage;
-                $message = $this->messageBuilder->buildMessage($user->tg_id, $text);
-            }
+
+            $message['chat_id'] = $user->tg_id;
+            $count++;
 
             if( isset($action) ) {
                 $this->sendPost($message, $action);
             }
         }
+
+        $message = $this->messageBuilder->buildMessage($user_id, "Пост был разослан $count пользователям");
+        $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
     }
 
     private function sendPost(array $message, TelegramActions $action): void {

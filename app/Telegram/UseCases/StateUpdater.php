@@ -31,7 +31,6 @@ class StateUpdater {
     }
 
     private function handleCreatePost(MessageUpdate $update, State $state): bool {
-        // Передавать в Request Енам чтобы вызывать функцию Отправить данные
         $not_handled = true;
         $keyboard = $this->buildCreatePostKeyboard();
         $user_id = $state->actor_id;

@@ -5,9 +5,7 @@ namespace App\Telegram\UseCases;
 use App\Libs\Telegram\TelegramActions;
 use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
-use App\Models\User;
 use App\Telegram\Updates\Update;
-use App\Telegram\UseCases\MsgHandlers\BotCommands;
 
 class MessageUpdater extends UpdateHandler {
 

@@ -46,15 +46,7 @@ class TelegramRequest {
         $tg_url = $this->tg_url;
         $secret = $this->secret;
 
-        // Доставать из енама
-        return match ($action) {
-            TelegramActions::getUpdates => "$tg_url/bot$secret/getUpdates$query",
-            TelegramActions::sendMessage => "$tg_url/bot$secret/sendMessage$query",
-            TelegramActions::sendDocument => "$tg_url/bot$secret/sendDocument$query",
-            TelegramActions::sendPhoto => "$tg_url/bot$secret/sendPhoto$query",
-            TelegramActions::editMessageReplyMarkup => "$tg_url/bot$secret/editMessageReplyMarkup$query",
-            default => throw new Exception('WRONG_ACTION', 404)
-        };
+        return "$tg_url/bot$secret/$action->value$query";
     }
 
     private function sendRequest(string $url, array $params = []): array {
@@ -74,7 +66,7 @@ class TelegramRequest {
 
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        if( $httpCode === 200 ) {
+        if( in_array($httpCode, [200, 400]) ) {
             return json_decode($response, true);
         }
         else {
