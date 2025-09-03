@@ -6,62 +6,64 @@ use Spatie\LaravelData\Data;
 use App\Telegram\Updates\Particles;
 use App\Telegram\Updates\Particles\Document;
 use Spatie\LaravelData\Attributes\Validation;
+use App\Telegram\Values\CallbackDataValues;
 
-class CallbackQueryUpdate extends Data implements Update
-{
+class CallbackQueryUpdate extends Data implements Update {
 
     public function __construct(
         #[
-            Validation\Required,
-            Validation\Numeric
-        ]
+        Validation\Required,
+        Validation\Numeric]
         public int $update_id,
         public Particles\CallbackQuery $callback_query
     ) {}
 
-    public function getUserId(): int
-    {
-        return $this->callback_query->getUserId();
+    public function getUserId(): int {
+        return $this->callback_query->from->getUserId();
     }
 
-    public function getUpdateId(): int
-    {
+    public function getUpdateId(): int {
         return $this->update_id;
     }
 
-    public function hasFrom(): bool
-    {
+    public function hasFrom(): bool {
         $from = $this->callback_query->from;
         return isset($from);
     }
 
-    public function hasPhoto(): bool
-    {
+    public function getMessageId(): int {
+        return $this->callback_query->message->message_id;
+    }
+
+    public function hasPhoto(): bool {
         return $this->callback_query->hasPhoto();
     }
 
-    public function hasDocument(): bool
-    {
+    public function hasDocument(): bool {
         return $this->callback_query->hasDocument();
     }
 
-    public function hasText(): bool
-    {
+    public function hasText(): bool {
         return $this->callback_query->hasText();
     }
 
-    public function getDocument(): Document
-    {
+    public function getText(): string {
+        return $this->callback_query->message->text;
+    }
+
+    public function getDocument(): Document {
         return $this->callback_query->getDocument();
     }
 
-    public function getPhoto(): array
-    {
+    public function getPhoto(): array {
         return $this->callback_query->getPhoto();
     }
 
-    public function getCaption(): ?string
-    {
+    public function getCaption(): ?string {
         return $this->callback_query->getCaption();
+    }
+
+    public function getData(): CallbackDataValues {
+        return $this->callback_query->data;
     }
 }
