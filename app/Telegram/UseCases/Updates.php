@@ -38,7 +38,6 @@ class Updates {
         };
 
         $need_handle = true;
-
         // Проверить что наличие State не мешает обрабатывать кнопки
         if( $values->hasFrom() ) {
             // если нашли юзера и у него есть state то первое действие это всегда state

@@ -12,17 +12,19 @@ class Demon {
         $secret = env('TG_BOT_SECRET');
         $telegram = new TelegramRequest($secret);
 
+        $useCase = new Updates();
         while( true ) {
             $update = new Update();
             $update_id = $update->getNextUpdateId();
-            $updates = $telegram->getUpdates($update_id, 20);
+            $updates = $telegram->getUpdates($update_id, 1);
 
             if( empty($updates['result']) ) {
                 sleep(2);
+                continue;
+                print('обновлений нет');
             }
 
-            $useCase = new Updates();
-            $useCase->handleUpdates($updates);
+            $useCase->handleUpdates($updates['result']);
         }
     }
 }

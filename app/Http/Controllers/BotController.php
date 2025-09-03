@@ -13,8 +13,6 @@ use App\Telegram\Demon;
 class BotController extends Controller {
 
     public function getUpdates() {
-        // $demon = new Demon();
-        // $demon->run();
         $secret = env('TG_BOT_SECRET');
         $telegram = new TelegramRequest($secret);
         $update = new Update();

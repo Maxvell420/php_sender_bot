@@ -30,14 +30,14 @@ class TelegramRequest {
         $query = '';
 
         if( !$timeout ) {
-            $timeout = 30;
+            $timeout = 0;
         }
 
         if( $offset ) {
             $query = '?' . http_build_query(
                 [
                     'offset' => $offset,
-                    'timeout' => 0,
+                    'timeout' => $timeout,
                     'limit' => 10
                 ]
             );

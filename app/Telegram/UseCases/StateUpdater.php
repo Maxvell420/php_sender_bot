@@ -56,7 +56,7 @@ class StateUpdater {
         }
 
         if( $handled ) {
-            // $state->delete();
+            $state->delete();
         }
 
         return $handled;

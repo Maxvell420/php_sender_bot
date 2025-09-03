@@ -51,16 +51,16 @@ class CallbackQueryUpdater {
     }
 
     private function handleSendPost(CallbackQueryUpdate $update, string $callback): void {
-        if( $callback != 'yes' ) {
-            return;
-        }
-
         $message_id = $update->getMessageId();
 
         $user_id = $update->getUserId();
 
         $hideKeyboardMessage = $this->messageBuilder->buildHileInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
         $this->telegramRequest->sendMessage(TelegramActions::editMessageReplyMarkup, $hideKeyboardMessage);
+
+        if( $callback != 'yes' ) {
+            return;
+        }
 
         $user = new User;
 
