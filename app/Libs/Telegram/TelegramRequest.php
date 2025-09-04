@@ -67,6 +67,9 @@ class TelegramRequest {
         if( $httpCode == 200 ) {
             return json_decode($response, true);
         }
+        elseif( $httpCode == 400 ) {
+            return [];
+        }
         else {
             throw new Exception('WRONG_CURL_RESPONSE', $httpCode);
         }

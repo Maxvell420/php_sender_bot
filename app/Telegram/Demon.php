@@ -3,9 +3,13 @@
 namespace App\Telegram;
 
 use App\Libs\Telegram\TelegramRequest;
-use App\Models\Update;
+use App\Models\ {
+    Update,
+    Job
+};
 use App\Telegram\UseCases\Updates;
 use Exception;
+use App\Telegram\UseCases\JobsHandler;
 
 class Demon {
 
@@ -19,12 +23,24 @@ class Demon {
             $update_id = $update->getNextUpdateId();
 
             try {
-                $updates = $telegram->getUpdates($update_id, 15);
+                $updates = $telegram->getUpdates($update_id, 10);
                 print('приняты обновления' . "\n");
 
                 if( empty($updates['result']) ) {
-                    // Тут сделать рассылку
-                    print('обновлений нет' . "\n");
+                    print('обновлений нет ищу работы' . "\n");
+                    $job = new Job();
+                    $job = $job->findFirstNotCompleted();
+
+                    if( $job ) {
+                        print("Выполняю работу $job->id" . "\n");
+                        $jobHandler = new JobsHandler($telegram);
+                        $jobHandler->handleJob($job);
+                        print("Выполнил работу $job->id" . "\n");
+                    }
+                    else {
+                        print('работ нет' . "\n");
+                    }
+
                     continue;
                 }
 

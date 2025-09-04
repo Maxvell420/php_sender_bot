@@ -35,11 +35,11 @@ class Updates {
 
     // Позволяет не упасть и идти дальше
     public function handleErrorUpdate(array $update): void {
-        $errorUpdate_id = $this->buildUpdateValues($update);
+        $errorUpdate_id = $this->getUpdateID($update);
         $this->saveUpdate($errorUpdate_id);
     }
 
-    private function buildUpdateValues(array $update): int {
+    private function getUpdateID(array $update): int {
         foreach(Enums\UpdateType::cases() as $case) {
             if( isset($update[$case->value]) ) {
                 $update = match ($case) {

@@ -5,7 +5,11 @@ namespace App\Telegram\UseCases;
 use App\Libs\Telegram\TelegramActions;
 use App\Libs\Telegram\TelegramRequest;
 use App\Models\State;
-use App\Models\User;
+use App\Models\ {
+    User,
+    Job,
+    JobUser
+};
 use App\Telegram\Enums;
 use App\Telegram\Updates\CallbackQueryUpdate;
 use App\Telegram\Updates\Update as UpdateInterface;
@@ -64,7 +68,6 @@ class CallbackQueryUpdater extends UpdateHandler {
 
         $user = new User;
 
-        $users = $user->listActiveUsers();
         // Как-то подправить эту штуку чтобы не изменять message
         if( $update->hasDocument() ) {
             $document = $update->getDocument();
@@ -83,26 +86,35 @@ class CallbackQueryUpdater extends UpdateHandler {
             $message = $this->messageBuilder->buildMessage($user_id, $text);
         }
 
+        if( !isset($message) ) {
+            return;
+        }
+
+        $job = new Job();
+        $job->json = json_encode(['message' => $message, 'action' => $action->value]);
+        $job->actor_id = $user_id;
+        $job->job_type = Enums\JobTypes::Create_post->value;
+        $job->save();
+
+        $users = $user->listActiveUsers();
         $count = 0;
 
         foreach($users as $user) {
-            if( $user_id == $user->tg_id ) {
-                continue;
-            }
+            // if( $user_id == $user->tg_id ) {
+            //     continue;
+            // }
 
             $message['chat_id'] = $user->tg_id;
             $count++;
 
-            if( isset($action) ) {
-                $this->sendPost($message, $action);
-            }
+            $userJob = new JobUser();
+            $userJob->actor_id = $user->tg_id;
+            $userJob->job_id = $job->id;
+
+            $userJob->save();
         }
 
-        $message = $this->messageBuilder->buildMessage($user_id, "Пост был разослан $count пользователям");
+        $message = $this->messageBuilder->buildMessage($user_id, "Пост в скором времени будет разослан $count пользователям");
         $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
-    }
-
-    private function sendPost(array $message, TelegramActions $action): void {
-        $this->telegramRequest->sendMessage($action, $message);
     }
 }

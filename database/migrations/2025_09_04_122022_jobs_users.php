@@ -10,15 +10,15 @@ return new class extends Migration {
      * Run the migrations.
      */
     public function up(): void {
-        Schema::create(
-            'states',
+        Schema::Create(
+            'jobs_users',
             function (Blueprint $table) {
                 $table->id();
-                $table->integer('actor_id')->unique('actor_id');
-                $table->integer('state_id');
-                $table->json('json')->nullable();
-                $table->timestamps();
+                $table->integer('job_id');
+                $table->integer('actor_id');
+                $table->enum('completed', ['yes', 'no'])->default('no');
             }
+
         );
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration {
      * Reverse the migrations.
      */
     public function down(): void {
-        Schema::dropIfExists('states');
+        Schema::dropIfExists('jobs_users');
     }
 };

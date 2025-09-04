@@ -7,6 +7,6 @@ use App\Telegram\Updates\Update as UpdateInterface;
 
 abstract class UpdateHandler {
 
-    public function __construct(public TelegramRequest $telegramRequest) {}
+    public function __construct(private TelegramRequest $telegramRequest) {}
     abstract public function handleUpdate(UpdateInterface $data): void;
 }
