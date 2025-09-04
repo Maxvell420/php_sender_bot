@@ -6,20 +6,23 @@ use App\Libs\Telegram\TelegramRequest;
 use App\Models\Update;
 use App\Telegram\UseCases\Updates;
 
-class Demon {
+class Demon
+{
 
-    public function run(): void {
+    public function run(): void
+    {
         $secret = env('TG_BOT_SECRET');
         $telegram = new TelegramRequest($secret);
 
         $useCase = new Updates();
-        while( true ) {
+        while (true) {
             $update = new Update();
             $update_id = $update->getNextUpdateId();
             $updates = $telegram->getUpdates($update_id, 5);
             print('приняты обновления' . "\n");
 
-            if( empty($updates['result']) ) {
+            if (empty($updates['result'])) {
+                // Тут сделать рассылку
                 print('обновлений нет' . "\n");
                 continue;
             }
