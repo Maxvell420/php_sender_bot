@@ -55,8 +55,4 @@ class JobsHandler {
         $job->complete();
         $job->save();
     }
-
-    private function sendPost(array $message, TelegramActions $action): void {
-        $this->telegramRequest->sendMessage($action, $message);
-    }
 }
