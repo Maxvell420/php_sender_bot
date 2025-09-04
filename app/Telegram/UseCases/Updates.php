@@ -17,36 +17,62 @@ use App\Telegram\Updates\ {
 use App\Telegram\Updates\Update as UpdateInterface;
 use Throwable;
 use App\Http\Exceptions\ValidationException;
+use App\Libs\Telegram\TelegramRequest;
+use Exception;
+
 // Корневой класс который все разруливает
 class Updates {
 
-    public function handleUpdates(array $updates): void {
-        foreach($updates as $update) {
-            foreach(Enums\UpdateType::cases() as $case) {
-                if( isset($update[$case->value]) ) {
-                    $this->handleUpdate($case, $update);
-                }
+    public function __construct(private TelegramRequest $telegramRequest) {}
+
+    public function handleUpdate(array $update): void {
+        foreach(Enums\UpdateType::cases() as $case) {
+            if( isset($update[$case->value]) ) {
+                $this->processUpdate($case, $update);
             }
         }
     }
 
-    private function handleUpdate(Enums\UpdateType $case, array $update): void {
+    // Позволяет не упасть и идти дальше
+    public function handleErrorUpdate(array $update): void {
+        $errorUpdate_id = $this->buildUpdateValues($update);
+        $this->saveUpdate($errorUpdate_id);
+    }
+
+    private function buildUpdateValues(array $update): int {
+        foreach(Enums\UpdateType::cases() as $case) {
+            if( isset($update[$case->value]) ) {
+                $update = match ($case) {
+                    Enums\UpdateType::MyChatMember => $this->buildVO(MyChatMemberUpdate::class, $update),
+                    Enums\UpdateType::Message => $this->buildVO(MessageUpdate::class, $update),
+                    Enums\UpdateType::CallbackQuery => $this->buildVO(CallbackQueryUpdate::class, $update)
+                };
+                return $update->getUpdateId();
+            }
+        }
+
+        // что-то другое надо делать
+        return $update['update_id'];
+    }
+
+    private function processUpdate(Enums\UpdateType $case, array $update): void {
         [$updater, $values] = match ($case) {
-            Enums\UpdateType::MyChatMember => [new MyChatMemberUpdater, $this->buildVO(MyChatMemberUpdate::class, $update)],
-            Enums\UpdateType::Message => [new MessageUpdater, $this->buildVO(MessageUpdate::class, $update)],
-            Enums\UpdateType::CallbackQuery => [new CallbackQueryUpdater, $this->buildVO(CallbackQueryUpdate::class, $update)]
+            Enums\UpdateType::MyChatMember => [new MyChatMemberUpdater($this->telegramRequest), $this->buildVO(MyChatMemberUpdate::class, $update)],
+            Enums\UpdateType::Message => [new MessageUpdater($this->telegramRequest), $this->buildVO(MessageUpdate::class, $update)],
+            Enums\UpdateType::CallbackQuery => [new CallbackQueryUpdater($this->telegramRequest), $this->buildVO(CallbackQueryUpdate::class, $update)]
         };
 
         $need_handle = true;
-        // Проверить что наличие State не мешает обрабатывать кнопки
+
         if( $values->hasFrom() ) {
             // если нашли юзера и у него есть state то первое действие это всегда state
             $values->getUserId();
             $state = new State()->findByUser($values->getUserId());
 
+            // Стейты только для сообщений?
             if( $values instanceof MessageUpdate ) {
                 if( $state ) {
-                    $state_updater = new StateUpdater;
+                    $state_updater = new StateUpdater($this->telegramRequest);
                     $need_handle = $state_updater->handleUpdate($values, $state);
                 }
             }
@@ -56,12 +82,12 @@ class Updates {
             $updater->handleUpdate($values);
         }
 
-        $this->saveUpdate($values);
+        $this->saveUpdate($values->getUpdateId());
     }
 
-    private function saveUpdate(UpdateInterface $data) {
+    private function saveUpdate(int $update_id) {
         $update = new Update;
-        $update->update_id = $data->getUpdateId();
+        $update->update_id = $update_id;
         $update->save();
     }
 

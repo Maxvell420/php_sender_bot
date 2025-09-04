@@ -14,14 +14,11 @@ use App\Telegram\InlineKeyboard\InlineKeyboard;
 
 class StateUpdater {
 
-    private TelegramRequest $telegramRequest;
-
     public function __construct(
+        private TelegramRequest $telegramRequest,
         private InlineBuilder $inlineBuilder = new InlineBuilder,
         private MessageBuilder $messageBuilder = new MessageBuilder,
-    ) {
-        $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
-    }
+    ) {}
 
     public function handleUpdate(MessageUpdate $update, State $state): bool {
         return match ($state->state_id) {

@@ -8,19 +8,21 @@ use App\Models\State;
 use App\Models\User;
 use App\Telegram\Enums;
 use App\Telegram\Updates\CallbackQueryUpdate;
+use App\Telegram\Updates\Update as UpdateInterface;
 
-class CallbackQueryUpdater {
-
-    private TelegramRequest $telegramRequest;
+class CallbackQueryUpdater extends UpdateHandler {
 
     public function __construct(
+        private TelegramRequest $telegramRequest,
         private InlineBuilder $inlineBuilder = new InlineBuilder,
         private MessageBuilder $messageBuilder = new MessageBuilder,
-    ) {
-        $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
-    }
+    ) {}
 
-    public function handleUpdate(CallbackQueryUpdate $update): void {
+    public function handleUpdate(UpdateInterface $update): void {
+        /**
+            * @var CallbackQueryUpdate $update
+        */
+
         $data = $update->getData();
 
         match ($data->callback) {

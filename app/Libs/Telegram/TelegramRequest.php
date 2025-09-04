@@ -50,8 +50,6 @@ class TelegramRequest {
     }
 
     private function sendRequest(string $url, array $params = []): array {
-
-        // dd($params);
         $method = $params['method'] ?? CURLOPT_HTTPGET;
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -66,11 +64,11 @@ class TelegramRequest {
 
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        if( in_array($httpCode, [200, 400]) ) {
+        if( $httpCode == 200 ) {
             return json_decode($response, true);
         }
         else {
-            throw new Exception('WRONG_CURL_RESPONSE', 500);
+            throw new Exception('WRONG_CURL_RESPONSE', $httpCode);
         }
     }
 }
