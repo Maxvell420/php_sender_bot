@@ -12,8 +12,7 @@ class Chat extends Data
         #[Validation\Required, Validation\Numeric]
         public int $id,
         #[Validation\Required, Validation\StringType]
-        public string $username,
-        #[Validation\Required, Validation\StringType]
-        public string $type
+        public string $type,
+        public ?string $username = null,
     ) {}
 }

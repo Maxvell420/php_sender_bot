@@ -53,7 +53,7 @@ class MessageUpdater extends UpdateHandler
         $user = new User()->findByTgId($user_id);
 
         if (!$user) {
-            $user = $this->createNewUser($data->getUserName(), $user_id, true);
+            $user = $this->createNewUser($user_id, true, $data->getUserName());
             // Вообще такого быть не должно
         }
 
@@ -79,6 +79,10 @@ class MessageUpdater extends UpdateHandler
 
     public function handleStart(MessageUpdate $data, User $user): void
     {
+        if (!$user->isMember()) {
+            // Не отсылаю клавиатуру если юзера забанило
+            return;
+        }
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');
@@ -99,7 +103,7 @@ class MessageUpdater extends UpdateHandler
         $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
     }
 
-    private function createNewUser(string $user_name, int $tg_id, bool $member): User
+    private function createNewUser(int $tg_id, bool $member, ?string $user_name = null): User
     {
         $user = new User();
         $user->user_name = $user_name;

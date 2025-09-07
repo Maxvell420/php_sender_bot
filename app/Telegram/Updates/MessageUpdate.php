@@ -34,7 +34,7 @@ class MessageUpdate extends Data implements Update
         return $this->message->findMessageFromId();
     }
 
-    public function getUserName(): string
+    public function getUserName(): ?string
     {
         return $this->message->getUserName();
     }

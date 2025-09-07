@@ -20,7 +20,7 @@ class MyChatMemberUpdater extends UpdateHandler
         $status = $values->isMember();
 
         if (!$user) {
-            $user = $this->createNewUser($values->getUserName(), $values->getUserId(), $status);
+            $user = $this->createNewUser($values->getUserId(), $status, $values->getUserName(),);
         }
 
         if ($status) {
@@ -32,7 +32,7 @@ class MyChatMemberUpdater extends UpdateHandler
         $user->save();
     }
 
-    private function createNewUser(string $user_name, int $tg_id, bool $member): User
+    private function createNewUser(int $tg_id, bool $member, ?string $user_name,): User
     {
         $user = new User();
         $user->user_name = $user_name;

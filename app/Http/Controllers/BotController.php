@@ -20,7 +20,7 @@ class BotController extends Controller
         $update = new Update();
         $update_id = $update->getNextUpdateId();
         // 196800180
-        $response = $telegram->getUpdates($update_id);
+        $response = $telegram->getUpdates();
         dd(json_encode($response));
     }
 

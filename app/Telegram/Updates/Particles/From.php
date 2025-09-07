@@ -11,11 +11,10 @@ class From extends Data
     public function __construct(
         #[Validation\Required, Validation\Numeric]
         public int $id,
-        #[Validation\Required, Validation\StringType]
-        public string $username,
+        public ?string $username = null,
     ) {}
 
-    public function getUserName(): string
+    public function getUserName(): ?string
     {
         return $this->username;
     }

@@ -18,7 +18,7 @@ class MyChatMember extends Data
         return $this->new_chat_member->getStatus();
     }
 
-    public function getUserName(): string
+    public function getUserName(): ?string
     {
         return $this->from->getUserName();
     }

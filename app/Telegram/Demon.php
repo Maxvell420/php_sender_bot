@@ -54,7 +54,7 @@ class Demon
                 $status = $e->getCode();
 
                 if (str_starts_with(4, "$status")) {
-                    $useCase->handleErrorUpdate($update);
+                    $useCase->handleErrorUpdate($update, $status);
                 } else {
                     // Как-то обрабатывать, сейчас просто спать час
                     sleep(env('WRONG_ANSWER'));

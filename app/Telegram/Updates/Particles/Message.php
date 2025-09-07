@@ -33,7 +33,7 @@ class Message extends Data
         return (int) $this->from?->getUserId();
     }
 
-    public function getUserName(): string
+    public function getUserName(): ?string
     {
         return $this->from->getUserName();
     }
@@ -87,10 +87,5 @@ class Message extends Data
     public function hasText(): bool
     {
         return (bool) $this->text;
-    }
-
-    public function hasDataAndInstance(): bool
-    {
-        return (bool) ($this->chat_instance && $this->data);
     }
 }
