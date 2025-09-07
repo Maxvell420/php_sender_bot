@@ -38,9 +38,10 @@ class MyChatMemberUpdater extends UpdateHandler
         $user->user_name = $user_name;
         $user->tg_id = $tg_id;
         $admin = env('TG_USER');
-        if ($admin == $user_name) {
+        if ($admin == $user->tg_id) {
             $user->is_admin = 'yes';
         }
+
         $member == true ? $user->setMember() : $user->setKicked();
         $user->save();
         return $user;

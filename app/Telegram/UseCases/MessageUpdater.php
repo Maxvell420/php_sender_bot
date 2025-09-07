@@ -7,13 +7,14 @@ use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
 use App\Telegram\Updates\Update;
 use App\Telegram\Enums;
-use App\Models\ {
+use App\Models\{
     User,
     Post
 };
 use App\Telegram\Values\CallbackDataValues;
 
-class MessageUpdater extends UpdateHandler {
+class MessageUpdater extends UpdateHandler
+{
 
     public function __construct(
         private TelegramRequest $telegramRequest,
@@ -21,22 +22,22 @@ class MessageUpdater extends UpdateHandler {
         private MessageBuilder $messageBuilder = new MessageBuilder,
     ) {}
 
-    public function handleUpdate(Update $values): void {
+    public function handleUpdate(Update $values): void
+    {
         /**
          * @var MessageUpdate $values
          */
 
         $user_id = $values->findMessageFromId();
 
-        if( !$user_id ) {
+        if (!$user_id) {
             // Если пришло не от бота то как-то обработать
             return;
         }
 
-        if( $values->hasBotCommands() ) {
+        if ($values->hasBotCommands()) {
             $this->handleBotCommand($values);
-        }
-        else {
+        } else {
             $builder = new MessageBuilder;
             $message = $builder->buildMessage(
                 $user_id,
@@ -46,11 +47,12 @@ class MessageUpdater extends UpdateHandler {
         }
     }
 
-    private function handleBotCommand(MessageUpdate $data) {
+    private function handleBotCommand(MessageUpdate $data)
+    {
         $user_id = $data->findMessageFromId();
         $user = new User()->findByTgId($user_id);
 
-        if( !$user ) {
+        if (!$user) {
             $user = $this->createNewUser($data->getUserName(), $user_id, true);
             // Вообще такого быть не должно
         }
@@ -58,8 +60,8 @@ class MessageUpdater extends UpdateHandler {
         // если это команда то в ней есть текст
         $text = $data->findText();
 
-        foreach(Enums\Commands::cases() as $case) {
-            if( str_contains($text, $case->value) ) {
+        foreach (Enums\Commands::cases() as $case) {
+            if (str_contains($text, $case->value)) {
                 $this->handleCommand($case, $data, $user);
             }
         }
@@ -67,14 +69,16 @@ class MessageUpdater extends UpdateHandler {
         return $data;
     }
 
-    private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void {
+    private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void
+    {
         match ($case) {
             Enums\Commands::Start => $this->handleStart($data, $user),
             default => ''
         };
     }
 
-    public function handleStart(MessageUpdate $data, User $user): void {
+    public function handleStart(MessageUpdate $data, User $user): void
+    {
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');
@@ -83,22 +87,30 @@ class MessageUpdater extends UpdateHandler {
         $buttons = [];
         $buttons[] = $this->inlineBuilder->buildUrlButton('Вступить в канал', $link);
 
-        if( $user->isAdmin() ) {
+        if ($user->isAdmin()) {
             $callbackData = new CallbackDataValues(Enums\Callback::CreatePost, 'yes');
             $buttons[] = $this->inlineBuilder->buildDataButton('Создать пост', json_encode($callbackData));
         }
 
         $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
 
-        $message = $this->messageBuilder->buildDocument($user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);
+        $message = $this->messageBuilder->buildDocument($user_id, caption: $message, file_id: $file_id, keyboard: $keyboard);
 
         $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
     }
 
-    private function createNewUser(string $user_name, int $tg_id, bool $member): User {
+    private function createNewUser(string $user_name, int $tg_id, bool $member): User
+    {
         $user = new User();
         $user->user_name = $user_name;
         $user->tg_id = $tg_id;
+
+        $admin = env('TG_USER');
+        if ($admin == $user->tg_id) {
+            $user->is_admin = 'yes';
+        }
+
+
         $member == true ? $user->setMember() : $user->setKicked();
         $user->save();
         return $user;
