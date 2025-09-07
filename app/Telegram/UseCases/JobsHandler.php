@@ -36,7 +36,7 @@ class JobsHandler
 
         $userJobs = new JobUser();
         $userJobs = $userJobs->listByJob($job->id);
-
+        $actor_id = $job->actor_id;
         /**
          * @var JobUser[] $userJobs
          */
@@ -45,6 +45,10 @@ class JobsHandler
             $count++;
 
             if ($user->isCompleted()) {
+                continue;
+            }
+
+            if ($user->actor_id == $actor_id) {
                 continue;
             }
 
