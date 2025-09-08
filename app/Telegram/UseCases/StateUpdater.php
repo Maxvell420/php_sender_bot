@@ -31,39 +31,52 @@ class StateUpdater
 
     private function handleCreatePost(MessageUpdate $update, State $state): bool
     {
-        $not_handled = true;
-        $keyboard = $this->buildCreatePostKeyboard();
-        $user_id = $state->actor_id;
-
-        if ($update->hasDocument() || $update->hasPhoto()) {
-            $message = $update->getCaption();
-        } else {
-            $message = $update->findText();
-        }
 
         if ($update->hasDocument()) {
-            $document = $update->getDocument();
-            $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
-            $not_handled = false;
+            $action = TelegramActions::sendDocument;
+            $text = $update->getCaption();
         } elseif ($update->hasPhoto()) {
-            $photo = $update->getPhoto();
-            $file = array_pop($photo);
-            $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id'], $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendPhoto, $message);
-            $not_handled = false;
+            $action = TelegramActions::sendPhoto;
+            $text = $update->getCaption();
         } elseif ($update->hasText()) {
+            $action = TelegramActions::sendMessage;
             $text = $update->findText();
-            $message = $this->messageBuilder->buildMessage($user_id, $text, $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
-            $not_handled = false;
+        } else {
+            return true;
         }
 
-        if (!$not_handled) {
-            $state->delete();
+        if ($update->hasEntities()) {
+            $text = $this->messageBuilder->buildBeautifulMessage($text, $update->getEntities());
         }
 
-        return $not_handled;
+        $user_id = $state->actor_id;
+        $message = $this->buildPostMessage($action, $update, $text, $user_id);
+        // $state->delete();
+        dump($message);
+        $this->telegramRequest->sendMessage($action, $message);
+
+
+        return false;
+    }
+
+    private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id): array
+    {
+        $keyboard = $this->buildCreatePostKeyboard();
+        switch ($type) {
+            case TelegramActions::sendPhoto:
+                $photo = $update->getPhoto();
+                $file = array_pop($photo);
+                $message = $this->messageBuilder->buildPhoto($user_id, $message, $file['file_id'], $keyboard);
+                break;
+            case TelegramActions::sendDocument:
+                $document = $update->getDocument();
+                $message = $this->messageBuilder->buildDocument($user_id, $message, $document->file_id, $keyboard);
+                break;
+            default:
+                $message = $this->messageBuilder->buildMessage($user_id, $message, $keyboard);
+                break;
+        };
+        return $message;
     }
 
     private function buildCreatePostKeyboard(): InlineKeyboard

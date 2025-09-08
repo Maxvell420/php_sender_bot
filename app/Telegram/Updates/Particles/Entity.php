@@ -29,11 +29,12 @@ class Entity extends Data
         return match ($this->type) {
             'bold' => ['start' => '*', 'end' => '*'],
             'italic' => ['start' => '_', 'end' => '_'],
-            'underline' => ['start' => '__', 'end' => '___'],
+            'underline' => ['start' => '__', 'end' => '__'],
             'strikethrough' => ['start' => '~', 'end' => '~'],
             'code' => ['start' => '`', 'end' => '`'],
             'pre' => $this->getPreTags(),
-            'spoiler' => ['start' => '`', 'end' => '`']
+            'spoiler' => ['start' => '||', 'end' => '||'],
+            'blockquote' => ['start' => '>', 'end' => '']
             // Добавить pre
             // Добавить text_link
             // добавить text_mention
@@ -53,11 +54,12 @@ class Entity extends Data
         return [
             'bold' => ['start' => '*', 'end' => '*'],
             'italic' => ['start' => '_', 'end' => '_'],
-            'underline' => ['start' => '__', 'end' => '___'],
+            'underline' => ['start' => '__', 'end' => '__'],
             'strikethrough' => ['start' => '~', 'end' => '~'],
             'code' => ['start' => '`', 'end' => '`'],
             'pre' => $this->getPreTags(),
-            'spoiler' => ['start' => '`', 'end' => '`']
+            'spoiler' => ['start' => '||', 'end' => '||'],
+            'blockquote' => ['start' => '>', 'end' => '']
         ];
     }
 
