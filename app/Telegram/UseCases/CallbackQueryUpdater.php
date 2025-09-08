@@ -111,7 +111,6 @@ class CallbackQueryUpdater extends UpdateHandler
             $userJob = new JobUser();
             $userJob->actor_id = $user->tg_id;
             $userJob->job_id = $job->id;
-            $userJob->complete();
 
             $userJob->save();
         }
