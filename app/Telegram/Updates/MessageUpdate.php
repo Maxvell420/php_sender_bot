@@ -6,6 +6,7 @@ use Spatie\LaravelData\Data;
 use App\Telegram\Updates\Particles;
 use App\Telegram\Updates\Particles\Document;
 use Spatie\LaravelData\Attributes\Validation;
+use Spatie\LaravelData\DataCollection;
 
 class MessageUpdate extends Data implements Update
 {
@@ -88,5 +89,15 @@ class MessageUpdate extends Data implements Update
     public function getCaption(): ?string
     {
         return $this->message->caption;
+    }
+
+    public function hasEntities(): bool
+    {
+        return (bool) $this->message->entities;
+    }
+
+    public function getEntities(): DataCollection
+    {
+        return $this->message->entities;
     }
 }

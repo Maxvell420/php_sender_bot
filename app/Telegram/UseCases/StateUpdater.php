@@ -35,6 +35,12 @@ class StateUpdater
         $keyboard = $this->buildCreatePostKeyboard();
         $user_id = $state->actor_id;
 
+        if ($update->hasDocument() || $update->hasPhoto()) {
+            $message = $update->getCaption();
+        } else {
+            $message = $update->findText();
+        }
+
         if ($update->hasDocument()) {
             $document = $update->getDocument();
             $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
