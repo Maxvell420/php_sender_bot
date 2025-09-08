@@ -101,9 +101,9 @@ class CallbackQueryUpdater extends UpdateHandler
         $count = 0;
 
         foreach ($users as $user) {
-            // if ($user_id == $user->tg_id) {
-            //     continue;
-            // }
+            if ($user_id == $user->tg_id) {
+                continue;
+            }
 
             $message['chat_id'] = $user->tg_id;
             $count++;
@@ -111,6 +111,7 @@ class CallbackQueryUpdater extends UpdateHandler
             $userJob = new JobUser();
             $userJob->actor_id = $user->tg_id;
             $userJob->job_id = $job->id;
+            $userJob->complete();
 
             $userJob->save();
         }
