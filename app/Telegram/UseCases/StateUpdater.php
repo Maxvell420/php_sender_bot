@@ -44,15 +44,15 @@ class StateUpdater
         } else {
             return true;
         }
-
         if ($update->hasEntities()) {
             $text = $this->messageBuilder->buildBeautifulMessage($text, $update->getEntities());
         }
-
+        dd($text);
         $user_id = $state->actor_id;
+
         $message = $this->buildPostMessage($action, $update, $text, $user_id);
         // $state->delete();
-        dump($message);
+
         $this->telegramRequest->sendMessage($action, $message);
 
 
