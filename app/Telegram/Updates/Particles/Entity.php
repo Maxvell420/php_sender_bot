@@ -6,14 +6,14 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
 use App\Telegram\Enums\EntityPosition;
 
-class Entity extends Data
-{
+class Entity extends Data {
+
+    public bool $rare_actions = false;
 
     public function __construct(
         #[
-            Validation\Required,
-            Validation\StringType
-        ]
+        Validation\Required,
+        Validation\StringType]
         public string $type,
         public ?int $offset = null,
         public ?int $length = null,
@@ -22,37 +22,21 @@ class Entity extends Data
         public ?int $custom_emoji_id = null
     ) {}
 
-    public function isCommand(): bool
-    {
+    public function isCommand(): bool {
         return $this->type == 'bot_command';
     }
 
-    public function getTypeTags(EntityPosition $position, $letterPosition, $result_array): array
-    {
-        $letter = $result_array[$letterPosition];
-        $types = $this->getAllowedTypes($letter);
-        if ($this->type == 'custom_emoji') {
-            $letter = '';
-
-            if ($position == EntityPosition::Start) {
-                $insertArray = range($letterPosition, $letterPosition + $this->length);
-                dd($insertArray);
-                array_splice($result_array, $letterPosition + 1, 0, $insertArray);
-                $letterPosition += $this->length;
-                // dd($letterPosition);
-            }
-        }
-        return [$result_array, $types[$this->type][$position->value], $letter, $letterPosition];
+    public function getTypeTags(EntityPosition $position): string {
+        $types = $this->getAllowedTypes();
+        return $types[$this->type][$position->value];
     }
 
-    public function isAllowedType(): bool
-    {
+    public function isAllowedType(): bool {
         $types = $this->getAllowedTypes();
         return isset($types[$this->type]);
     }
 
-    private function getAllowedTypes(string $letter = ''): array
-    {
+    private function getAllowedTypes(): array {
         return [
             'bold' => ['start' => '*', 'end' => '*'],
             'italic' => ['start' => '_', 'end' => '_'],
@@ -61,18 +45,16 @@ class Entity extends Data
             'code' => ['start' => '`', 'end' => '`'],
             'pre' => $this->getPreTags(),
             'spoiler' => ['start' => '||', 'end' => '||'],
-            'blockquote' => ['start' => '>', 'end' => ''],
-            'custom_emoji' =>  $this->getCustomEmojiTags($letter)
+            'blockquote' => ['start' => ">", 'end' => ""],
+            'custom_emoji' => $this->getCustomEmojiTags()
         ];
     }
 
-    private function getCustomEmojiTags(string $fallback): array
-    {
-        return ['start' => "![$fallback](tg://emoji?id=$this->custom_emoji_id)", 'end' => ''];
+    private function getCustomEmojiTags(): array {
+        return ['start' => "![", 'end' => "](tg://emoji?id=$this->custom_emoji_id)"];
     }
 
-    private function getPreTags(): array
-    {
-        return ['start' => "```{$this->language}\n", 'end' => '\n```'];
+    private function getPreTags(): array {
+        return ['start' => "```{$this->language}\n", 'end' => "\n```"];
     }
 }
