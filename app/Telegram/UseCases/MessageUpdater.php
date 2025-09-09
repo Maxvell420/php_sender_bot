@@ -38,6 +38,7 @@ class MessageUpdater extends UpdateHandler
         if ($values->hasBotCommands()) {
             $this->handleBotCommand($values);
         } else {
+
             $builder = new MessageBuilder;
             $message = $builder->buildMessage(
                 $user_id,

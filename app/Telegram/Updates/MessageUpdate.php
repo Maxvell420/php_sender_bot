@@ -91,13 +91,13 @@ class MessageUpdate extends Data implements Update
         return $this->message->caption;
     }
 
-    public function hasEntities(): bool
-    {
-        return (bool) $this->message->entities;
-    }
-
-    public function getEntities(): DataCollection
+    public function getTextEntities(): ?DataCollection
     {
         return $this->message->entities;
+    }
+
+    public function getCaptionEntities(): ?DataCollection
+    {
+        return $this->message->caption_entities;
     }
 }

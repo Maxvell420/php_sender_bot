@@ -16,7 +16,9 @@ class Entity extends Data
         public string $type,
         public ?int $offset = null,
         public ?int $length = null,
-        public ?string $language = null
+        public ?string $language = null,
+        public ?string $url = null,
+        public ?int $custom_emoji_id = null
     ) {}
 
     public function isCommand(): bool
@@ -26,21 +28,8 @@ class Entity extends Data
 
     public function getTypeTags(): array
     {
-        return match ($this->type) {
-            'bold' => ['start' => '*', 'end' => '*'],
-            'italic' => ['start' => '_', 'end' => '_'],
-            'underline' => ['start' => '__', 'end' => '__'],
-            'strikethrough' => ['start' => '~', 'end' => '~'],
-            'code' => ['start' => '`', 'end' => '`'],
-            'pre' => $this->getPreTags(),
-            'spoiler' => ['start' => '||', 'end' => '||'],
-            'blockquote' => ['start' => '>', 'end' => '']
-            // Добавить pre
-            // Добавить text_link
-            // добавить text_mention
-            // Добавить custom_emoji
-            //Добавить blockquote
-        };
+        $types = $this->getAllowedTypes();
+        return $types[$this->type];
     }
 
     public function isAllowedType(): bool
@@ -60,6 +49,7 @@ class Entity extends Data
             'pre' => $this->getPreTags(),
             'spoiler' => ['start' => '||', 'end' => '||'],
             'blockquote' => ['start' => '>', 'end' => '']
+            // custom_emoji
         ];
     }
 

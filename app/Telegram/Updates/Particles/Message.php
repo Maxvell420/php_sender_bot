@@ -26,6 +26,10 @@ class Message extends Data
         public ?array $photo = null,
         public ?Document $document = null,
         public ?string $caption = null,
+        /**
+         * @var Entity[]|DataCollection $caption_entities
+         */
+        public ?DataCollection $caption_entities = null
     ) {}
 
     public function getUserId(): int

@@ -35,22 +35,27 @@ class StateUpdater
         if ($update->hasDocument()) {
             $action = TelegramActions::sendDocument;
             $text = $update->getCaption();
+            $entities = $update->getCaptionEntities();
         } elseif ($update->hasPhoto()) {
             $action = TelegramActions::sendPhoto;
             $text = $update->getCaption();
+            $entities = $update->getCaptionEntities();
         } elseif ($update->hasText()) {
             $action = TelegramActions::sendMessage;
             $text = $update->findText();
+            $entities = $update->getTextEntities();
         } else {
             return true;
         }
-        if ($update->hasEntities()) {
-            $text = $this->messageBuilder->buildBeautifulMessage($text, $update->getEntities());
+        dump($text);
+        if (!empty($entities)) {
+            $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
         }
         dd($text);
+
         $user_id = $state->actor_id;
 
-        $message = $this->buildPostMessage($action, $update, $text, $user_id);
+        $message = $this->buildPostMessage($action, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
         // $state->delete();
 
         $this->telegramRequest->sendMessage($action, $message);
@@ -59,21 +64,21 @@ class StateUpdater
         return false;
     }
 
-    private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id): array
+    private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id, array $params = []): array
     {
         $keyboard = $this->buildCreatePostKeyboard();
         switch ($type) {
             case TelegramActions::sendPhoto:
                 $photo = $update->getPhoto();
                 $file = array_pop($photo);
-                $message = $this->messageBuilder->buildPhoto($user_id, $message, $file['file_id'], $keyboard);
+                $message = $this->messageBuilder->buildPhoto($user_id, $message, $file['file_id'], $keyboard, $params);
                 break;
             case TelegramActions::sendDocument:
                 $document = $update->getDocument();
-                $message = $this->messageBuilder->buildDocument($user_id, $message, $document->file_id, $keyboard);
+                $message = $this->messageBuilder->buildDocument($user_id, $message, $document->file_id, $keyboard, $params);
                 break;
             default:
-                $message = $this->messageBuilder->buildMessage($user_id, $message, $keyboard);
+                $message = $this->messageBuilder->buildMessage($user_id, $message, $keyboard, $params);
                 break;
         };
         return $message;

@@ -55,6 +55,7 @@ class TelegramRequest
 
     private function sendRequest(string $url, array $params = []): array
     {
+        // dd(mb_strlen($params['post_fields']['caption']));
         $method = $params['method'] ?? CURLOPT_HTTPGET;
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
