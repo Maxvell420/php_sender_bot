@@ -119,6 +119,7 @@ class MessageBuilder {
 
             $offset = $entity->offset;
             $length = $entity->length;
+            dump($message_array[452]);
 
             if( $entity->type == 'custom_emoji' ) {
                 $insertArray = [];
@@ -143,10 +144,28 @@ class MessageBuilder {
                 $events[$offset + $fault][EntityPosition::Start->value][] = $entity;
                 $events[$offset + $length + $fault][EntityPosition::End->value][] = $entity;
             }
+
+            if( $entity->type == 'blockquote' ) {
+                for($i = $offset + $fault; $i < $offset + $length + $fault; $i++) {
+                    $letter = $message_array[$i];
+
+                    if( $letter != "\n" ) {
+                        continue;
+                    }
+
+                    // dd($i);
+                    // dump($offset + $length + $fault);
+                    // dump($i);
+                    // dd($entity);
+                    $events[$i][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+                }
+
+                // dump($events);
+                // dd($message_array);
+            }
         }
 
         $beautifulArray = [];
-        // dd($message_array);
 
         for($position = 0; $position < count($message_array); $position++) {
             $letter = $message_array[$position];
