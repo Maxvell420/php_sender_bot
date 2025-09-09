@@ -4,6 +4,7 @@ namespace App\Telegram\Updates\Particles;
 
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
+use App\Telegram\Enums\EntityPosition;
 
 class Entity extends Data
 {
@@ -26,10 +27,22 @@ class Entity extends Data
         return $this->type == 'bot_command';
     }
 
-    public function getTypeTags(): array
+    public function getTypeTags(EntityPosition $position, $letterPosition, $result_array): array
     {
-        $types = $this->getAllowedTypes();
-        return $types[$this->type];
+        $letter = $result_array[$letterPosition];
+        $types = $this->getAllowedTypes($letter);
+        if ($this->type == 'custom_emoji') {
+            $letter = '';
+
+            if ($position == EntityPosition::Start) {
+                $insertArray = range($letterPosition, $letterPosition + $this->length);
+                dd($insertArray);
+                array_splice($result_array, $letterPosition + 1, 0, $insertArray);
+                $letterPosition += $this->length;
+                // dd($letterPosition);
+            }
+        }
+        return [$result_array, $types[$this->type][$position->value], $letter, $letterPosition];
     }
 
     public function isAllowedType(): bool
@@ -38,7 +51,7 @@ class Entity extends Data
         return isset($types[$this->type]);
     }
 
-    private function getAllowedTypes(): array
+    private function getAllowedTypes(string $letter = ''): array
     {
         return [
             'bold' => ['start' => '*', 'end' => '*'],
@@ -48,9 +61,14 @@ class Entity extends Data
             'code' => ['start' => '`', 'end' => '`'],
             'pre' => $this->getPreTags(),
             'spoiler' => ['start' => '||', 'end' => '||'],
-            'blockquote' => ['start' => '>', 'end' => '']
-            // custom_emoji
+            'blockquote' => ['start' => '>', 'end' => ''],
+            'custom_emoji' =>  $this->getCustomEmojiTags($letter)
         ];
+    }
+
+    private function getCustomEmojiTags(string $fallback): array
+    {
+        return ['start' => "![$fallback](tg://emoji?id=$this->custom_emoji_id)", 'end' => ''];
     }
 
     private function getPreTags(): array

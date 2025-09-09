@@ -7,6 +7,7 @@ use App\Telegram\InlineKeyboard\{
 };
 use App\Telegram\Updates\Particles\Entity;
 use Spatie\LaravelData\DataCollection;
+use App\Telegram\Enums\EntityPosition;
 
 class MessageBuilder
 {
@@ -82,40 +83,45 @@ class MessageBuilder
             }
             $offset = $entity->offset;
             $length = $entity->length;
-            $tags = $entity->getTypeTags();
-            $events[$offset]['start'][] = $tags['start'];
-            $events[$offset + $length]['end'][] = $tags['end'];
+            $events[$offset][EntityPosition::Start->value][] = $entity;
+            $events[$offset + $length][EntityPosition::End->value][] = $entity;
         }
 
         $message_array = mb_str_split($message);
+
         $beautifulArray = [];
-        dd($message_array);
-        foreach ($message_array as $key => $letter) {
+        for ($position = 0; $position < count($message_array); $position++) {
+            $letter = $message_array[$position];
             if ($this->isSpecialLetter($letter)) {
                 $beautifulArray[] = '\\';
             }
-            if (!isset($events[$key])) {
+
+            if (!isset($events[$position])) {
                 $beautifulArray[] = $letter;
                 continue;
             }
 
-            $letter_events = $events[$key];
-            dump([$letter, $letter_events, $key]);
+            $letter_events = $events[$position];
 
-            if (isset($letter_events['end'])) {
+            if (isset($letter_events[EntityPosition::End->value])) {
 
-                foreach ($letter_events['end'] as $event) {
+                foreach ($letter_events[EntityPosition::End->value] as $event) {
+                    [$message_array, $event, $letter, $position] = $event->getTypeTags(EntityPosition::End, $position, $message_array);
                     $beautifulArray[] = $event;
                 }
             }
 
-            if (isset($letter_events['start'])) {
-                foreach ($letter_events['start'] as $event) {
-                    $beautifulArray[] = $event;
-                }
-            }
             $beautifulArray[] = $letter;
+
+            if (isset($letter_events[EntityPosition::Start->value])) {
+
+                foreach ($letter_events[EntityPosition::Start->value] as $event) {
+                    [$message_array, $event, $letter, $position] = $event->getTypeTags(EntityPosition::Start, $position, $message_array);
+                    $beautifulArray[] = $event;
+                }
+            }
         }
+
 
         return implode('', $beautifulArray);
     }

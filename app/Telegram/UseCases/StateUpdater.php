@@ -47,7 +47,7 @@ class StateUpdater
         } else {
             return true;
         }
-        dump($text);
+
         if (!empty($entities)) {
             $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
         }
