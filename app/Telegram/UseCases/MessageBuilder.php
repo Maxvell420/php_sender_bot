@@ -70,37 +70,6 @@ class MessageBuilder {
         return $data;
     }
 
-    // private function getMessageEmojis(array $messageLetters, DataCollection $entities): array {
-    //     $fault = 0;
-    //     $emojis = [];
-    //     /**
-    //      * @var Entity[] $entities
-    //      */
-
-    //     dump($entities);
-
-    //     foreach($entities as $entity) {
-    //         if( !$entity->isAllowedType() ) {
-    //             continue;
-    //         }
-
-    //         if( $entity->type != 'custom_emoji' ) {
-    //             continue;
-    //         }
-
-    //         $offset = $entity->offset;
-    //         $length = $entity->length;
-    //         // dump($messageLetters);
-    //         $insertArray = range(0, $length - 1);
-    //         array_splice($messageLetters, $offset + 1 + $fault, 0, $insertArray);
-    //         $emoji = $messageLetters[$offset + $fault];
-    //         $fault += $length - 1;
-    //         $emojis[] = $emoji;
-    //     }
-
-    //     dd($messageLetters) dd($emojis);
-    // }
-
     private function buildEventdependedMessageArray(array $message_array, DataCollection $entities): array {
         /**
          * @var Entity[] $entities
@@ -184,8 +153,6 @@ class MessageBuilder {
 
 
         $beautifulArray = [];
-        // dump($events);
-        // dd($message_array);
 
         for($position = 0; $position < count($message_array); $position++) {
             $letter = $message_array[$position];
