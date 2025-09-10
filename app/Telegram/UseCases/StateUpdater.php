@@ -47,17 +47,14 @@ class StateUpdater {
             return true;
         }
 
-        // dump($text);
-
         if( !empty($entities) ) {
             $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
         }
 
-        dd($text);
         $user_id = $state->actor_id;
 
         $message = $this->buildPostMessage(TelegramActions::sendMessage, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
-        // $state->delete();
+        $state->delete();
 
         $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
 
