@@ -3,12 +3,17 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Models\User;
+use App\Models\ {
+    Log,
+    User
+};
 
 // Обработка различных ошибок
 class TelegramErrosHandler {
 
-    public function handleTelegramRequest(TelegramActions $action, array $data, int $status): void {
+    private const string WRONG_REPLY_MARKUP = "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message";
+
+    public function handleTelegramRequest(TelegramActions $action, array $data, int $status, string $error_message): void {
         if( $status == 403 && isset($data['chat_id']) ) {
             $user = new User()->findByTgId($data['chat_id']);
 
@@ -21,15 +26,30 @@ class TelegramErrosHandler {
         }
 
         match($action) {
-            TelegramActions::editMessageReplyMarkup => $this->handleSendReplyMarkUp($data, $status),
-            default => $this->handleSendData($data, $status)
+            TelegramActions::editMessageReplyMarkup => $this->handleSendReplyMarkUp($data, $status, $error_message),
+            default => $this->handleSendData($data, $status, $error_message)
         };
     }
 
-    private function handleSendReplyMarkUp(array $data, int $status): void {}
-    private function handleSendData(array $data, int $status): void {}
+    private function handleSendReplyMarkUp(array $data, int $status, string $error_message): void {
+        if( $error_message == self::WRONG_REPLY_MARKUP  && $status == 400 ) {
+            return;
+        }
 
-    private function logError(): void {}
+        $this->handleSendData($data, $status, $error_message);
+    }
+
+    private function handleSendData(array $data, int $status, string $error_message): void {
+        $save_data = ['message' => $data, 'message' => $error_message];
+        $data = json_encode($save_data);
+        $this->logError($data);
+    }
+
+    private function logError(string $message): void {
+        $log = new Log();
+        $log->info = $message;
+        $log->save();
+    }
 
     public function handleWrongUpdate(array $data): void {}
 

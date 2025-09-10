@@ -66,11 +66,13 @@ class TelegramRequest {
 
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
+        $response = json_decode($response, true);
+
         if( $httpCode == 200 ) {
-            return json_decode($response, true);
+            return $response;
         }
         elseif( str_starts_with($httpCode, 4) ) {
-            throw new TelegramApiException($response, $httpCode);
+            throw new TelegramApiException($response['description'], $httpCode);
         }
         else {
             // телега неверно ответила?

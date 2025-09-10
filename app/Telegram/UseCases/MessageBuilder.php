@@ -15,6 +15,10 @@ use App\Telegram\Enums\ {
 class MessageBuilder {
 
     public function buildMessage(int $chat_id, string $text, ?InlineKeyboard $keyboard = null, array $params = []): array {
+        if( mb_strlen($text) >= 4096 ) {
+            // Сделать тут ошибки валидации
+        }
+
         $data = ['chat_id' => $chat_id, 'text' => $text];
 
         if( isset($params['parse_mode']) ) {
