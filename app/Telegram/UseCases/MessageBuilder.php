@@ -133,6 +133,7 @@ class MessageBuilder {
                         continue;
                     }
 
+                    // Я не до конца понял почему так)
                     $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
                 }
             }
@@ -196,21 +197,13 @@ class MessageBuilder {
         return implode('', $beautifulArray);
     }
 
-    // Вот это мне не нравится....
     private function handleEvent(EntityPosition $position, Entity $entity, array $message_array, int $eventPosition,): array {
         $letter = $message_array[$eventPosition];
 
         if( $position == EntityPosition::Start ) {
             switch($entity->type) {
-                case TelegramEntities::Custom_emoji->value:
-                    $event = $entity->getTypeTags($position);
-                    // $letter = $message_array[$eventPosition + 1];
-                    // $letter = '';
-                    break;
-
-                default:
-                    $event = $entity->getTypeTags($position);
-                    break;
+                default:$event = $entity->getTypeTags($position);
+                break;
             }
         }
         else {
@@ -222,7 +215,7 @@ class MessageBuilder {
 
                 case TelegramEntities::Blockquote->value:
                     $event = $entity->getTypeTags($position);
-
+                    // Проставляю туда где нету пропуска на другую строку т.к. эвент этим должен закрываться
                     if( $message_array[$eventPosition + 1] != "\n" ) {
                         $event .= "\n";
                     }
