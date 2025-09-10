@@ -2,6 +2,7 @@
 
 namespace App\Libs\Telegram;
 
+use App\Http\Exceptions\TelegramApiException;
 use Exception;
 
 class TelegramRequest {
@@ -62,16 +63,17 @@ class TelegramRequest {
         }
 
         $response = curl_exec($curl);
-        dd($response);
+
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         if( $httpCode == 200 ) {
             return json_decode($response, true);
         }
-        elseif( $httpCode == 400 ) {
-            return [];
+        elseif( str_starts_with($httpCode, 4) ) {
+            throw new TelegramApiException($response, $httpCode);
         }
         else {
+            // телега неверно ответила?
             throw new Exception('WRONG_CURL_RESPONSE', $httpCode);
         }
     }

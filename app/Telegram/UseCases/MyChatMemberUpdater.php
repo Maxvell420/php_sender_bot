@@ -6,11 +6,9 @@ use App\Telegram\Updates\MyChatMemberUpdate;
 use App\Models\User;
 use App\Telegram\Updates\Update as UpdateInterface;
 
-class MyChatMemberUpdater extends UpdateHandler
-{
+class MyChatMemberUpdater extends UpdateHandler {
 
-    public function handleUpdate(UpdateInterface $values): void
-    {
+    public function handleUpdate(UpdateInterface $values): void {
         /**
          * @var MyChatMemberUpdate $values
          */
@@ -19,26 +17,27 @@ class MyChatMemberUpdater extends UpdateHandler
         $user = (new User)->findByTgId($user_id);
         $status = $values->isMember();
 
-        if (!$user) {
+        if( !$user ) {
             $user = $this->createNewUser($values->getUserId(), $status, $values->getUserName(),);
         }
 
-        if ($status) {
+        if( $status ) {
             $user->setMember();
-        } else {
+        }
+        else {
             $user->setKicked();
         }
 
         $user->save();
     }
 
-    private function createNewUser(int $tg_id, bool $member, ?string $user_name,): User
-    {
+    private function createNewUser(int $tg_id, bool $member, ?string $user_name,): User {
         $user = new User();
         $user->user_name = $user_name;
         $user->tg_id = $tg_id;
         $admin = env('TG_USER');
-        if ($admin == $user->tg_id) {
+
+        if( $admin == $user->tg_id ) {
             $user->is_admin = 'yes';
         }
 

@@ -3,33 +3,30 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Libs\Telegram\TelegramRequest;
-use App\Models\{
+use App\Models\ {
     Job,
     JobUser
 };
 use App\Telegram\Enums;
+use App\Telegram\TelegramRequestFacade;
 
-class JobsHandler
-{
+class JobsHandler {
 
-    public function __construct(private TelegramRequest $telegramRequest, private MessageBuilder $messageBuilder = new MessageBuilder) {}
+    public function __construct(private TelegramRequestFacade $telegramRequest, private MessageBuilder $messageBuilder) {}
 
-    public function handleJob(Job $job): void
-    {
+    public function handleJob(Job $job): void {
         match ($job->job_type) {
             Enums\JobTypes::Create_post->value => $this->handleSendPost($job),
         };
     }
 
-    private function handleSendPost(Job $job): void
-    {
+    private function handleSendPost(Job $job): void {
         $count = 0;
 
         $update = json_decode($job->json, true);
 
-        foreach (TelegramActions::cases() as $case) {
-            if ($case->value == $update['action']) {
+        foreach(TelegramActions::cases() as $case) {
+            if( $case->value == $update['action'] ) {
                 $action = $case;
             }
         }
@@ -41,14 +38,14 @@ class JobsHandler
          * @var JobUser[] $userJobs
          */
 
-        foreach ($userJobs as $user) {
+        foreach($userJobs as $user) {
             $count++;
 
-            if ($user->isCompleted()) {
+            if( $user->isCompleted() ) {
                 continue;
             }
 
-            if ($user->actor_id == $actor_id) {
+            if( $user->actor_id == $actor_id ) {
                 continue;
             }
 

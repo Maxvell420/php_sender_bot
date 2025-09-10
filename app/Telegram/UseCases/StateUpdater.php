@@ -3,11 +3,11 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
 use App\Models\State;
 use App\Telegram\ {
     Enums,
+    TelegramRequestFacade,
     Values
 };
 use App\Telegram\InlineKeyboard\InlineKeyboard;
@@ -15,9 +15,9 @@ use App\Telegram\InlineKeyboard\InlineKeyboard;
 class StateUpdater {
 
     public function __construct(
-        private TelegramRequest $telegramRequest,
-        private InlineBuilder $inlineBuilder = new InlineBuilder,
-        private MessageBuilder $messageBuilder = new MessageBuilder,
+        private TelegramRequestFacade $telegramRequest,
+        private InlineBuilder $inlineBuilder,
+        private MessageBuilder $messageBuilder,
     ) {}
 
     public function handleUpdate(MessageUpdate $update, State $state): bool {
