@@ -101,16 +101,43 @@ class MessageBuilder {
     //     dd($messageLetters) dd($emojis);
     // }
 
-    public function buildBeautifulMessage(string $message, DataCollection $entities): string {
-        $events = [];
-
-        $message_array = mb_str_split($message);
-
+    private function buildEventdependedMessageArray(array $message_array, DataCollection $entities): array {
         /**
          * @var Entity[] $entities
          */
-        $fault = 0;
-        // dd($entities);
+
+        foreach($entities as $entity) {
+            if( $entity->type != 'custom_emoji' ) {
+                continue;
+            }
+
+            $offset = $entity->offset;
+            $length = $entity->length;
+            $insertArray = [];
+
+            if( $length == 2 ) {
+                $insert_length = 2;
+            }
+            else {
+                $insert_length = 2;
+            }
+
+            for($i = 1; $i < $insert_length; $i++) {
+                $insertArray[] = '';
+            }
+
+            array_splice($message_array, $offset + 1, 0, $insertArray);
+        }
+
+        return $message_array;
+    }
+
+    private function buildMessageEntitiesEvents(DataCollection $entities, array $message_array): array {
+        /**
+         * @var Entity[] $entities
+         */
+
+        $events = [];
 
         foreach($entities as $entity) {
             if( !$entity->isAllowedType() ) {
@@ -118,54 +145,47 @@ class MessageBuilder {
             }
 
             $offset = $entity->offset;
-            $length = $entity->length;
-            dump($message_array[452]);
+            $length = $entity->length - 1;
 
-            if( $entity->type == 'custom_emoji' ) {
-                $insertArray = [];
+            $events[$offset][EntityPosition::Start->value][] = $entity;
 
-                for($i = 0; $i < $length; $i++) {
-                    $insertArray[] = '';
-                }
-
-                array_splice($message_array, $offset + 1 + $fault, 0, $insertArray);
-                $events[$offset + $fault][EntityPosition::Start->value][] = $entity;
-
-                if( isset($events[$offset + $length + $fault][EntityPosition::End->value]) ) {
-                    array_unshift($events[$offset + $length + $fault][EntityPosition::End->value], $entity);
-                }
-                else {
-                    $events[$offset + $length + $fault][EntityPosition::End->value][] = $entity;
-                }
-
-                $fault += $length - 1;
+            if( $entity->type == 'custom_emoji' && isset($events[$offset + $length][EntityPosition::End->value]) ) {
+                array_unshift($events[$offset + $length][EntityPosition::End->value], $entity);
             }
             else {
-                $events[$offset + $fault][EntityPosition::Start->value][] = $entity;
-                $events[$offset + $length + $fault][EntityPosition::End->value][] = $entity;
+                $events[$offset + $length][EntityPosition::End->value][] = $entity;
             }
 
             if( $entity->type == 'blockquote' ) {
-                for($i = $offset + $fault; $i < $offset + $length + $fault; $i++) {
+                for($i = $offset; $i < $offset + $length; $i++) {
                     $letter = $message_array[$i];
 
                     if( $letter != "\n" ) {
                         continue;
                     }
 
-                    // dd($i);
-                    // dump($offset + $length + $fault);
-                    // dump($i);
-                    // dd($entity);
-                    $events[$i][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+                    $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
                 }
-
-                // dump($events);
-                // dd($message_array);
             }
         }
 
+        return $events;
+    }
+
+    public function buildBeautifulMessage(string $message, DataCollection $entities): string {
+        $events = [];
+
+        $message_array = mb_str_split($message);
+        $message_array = $this->buildEventdependedMessageArray($message_array, $entities);
+        $events = $this->buildMessageEntitiesEvents($entities, $message_array);
+        /**
+         * @var Entity[] $entities
+         */
+
+
         $beautifulArray = [];
+        // dump($events);
+        // dd($message_array);
 
         for($position = 0; $position < count($message_array); $position++) {
             $letter = $message_array[$position];
@@ -180,57 +200,78 @@ class MessageBuilder {
             }
 
             $letter_events = $events[$position];
-            $offset = 0;
 
             if( isset($letter_events[EntityPosition::End->value]) ) {
+                $end_events = [];
+
                 foreach($letter_events[EntityPosition::End->value] as $event) {
-                    [$offset, $letter, $event] = $this->handleEvent(EntityPosition::End, $event, $message_array, $position);
-                    $beautifulArray[] = $event;
+                    [$letter, $event] = $this->handleEvent(EntityPosition::End, $event, $message_array, $position);
+                    $end_events[] = $event;
                 }
+
+                $beautifulArray[] = $letter;
+                $beautifulArray = array_merge($beautifulArray, $end_events);
             }
 
             if( isset($letter_events[EntityPosition::Start->value]) ) {
-                foreach($letter_events[EntityPosition::Start->value] as $event) {
-                    [$offset, $letter, $event] = $this->handleEvent(EntityPosition::Start, $event, $message_array, $position);
-                    $beautifulArray[] = $event;
-                }
-            }
+                $start_events = [];
 
-            $position += $offset;
-            $beautifulArray[] = $letter;
+                foreach($letter_events[EntityPosition::Start->value] as $event) {
+                    [$letter, $event] = $this->handleEvent(EntityPosition::Start, $event, $message_array, $position);
+                    $start_events[] = $event;
+                }
+
+                $beautifulArray = array_merge($beautifulArray, $start_events);
+                $beautifulArray[] = $letter;
+            }
         }
 
         return implode('', $beautifulArray);
     }
 
     // Вот это мне не нравится....
-    private function handleEvent(EntityPosition $position, Entity $entity, array $message_array, int $eventPosition): array {
-        $offset = 0;
+    private function handleEvent(EntityPosition $position, Entity $entity, array $message_array, int $eventPosition,): array {
         $letter = $message_array[$eventPosition];
+
+        if( $position == EntityPosition::Start ) {
+            switch($entity->type) {
+                case TelegramEntities::Custom_emoji->value:
+                    $event = $entity->getTypeTags($position);
+                    // $letter = $message_array[$eventPosition + 1];
+                    // $letter = '';
+                    break;
+
+                default:
+                    $event = $entity->getTypeTags($position);
+                    break;
+            }
+        }
+        else {
+            switch($entity->type) {
+                case TelegramEntities::Custom_emoji->value:
+                    $event = $entity->getTypeTags($position);
+                    $letter = '';
+                    break;
+
+                case TelegramEntities::Blockquote->value:
+                    $event = $entity->getTypeTags($position);
+
+                    if( $message_array[$eventPosition + 1] != "\n" ) {
+                        $event .= "\n";
+                    }
+                    break;
+
+                default:
+                    $event = $entity->getTypeTags($position);
+                    break;
+            }
+        }
 
         if( $this->isSpecialLetter($letter) ) {
             $letter = '\\' . $letter;
         }
 
-        switch($entity->type) {
-            case TelegramEntities::Custom_emoji->value:
-
-                if( $position == EntityPosition::Start ) {
-                    $event = $entity->getTypeTags($position);
-                    $offset = $entity->length - 1;
-                }
-                else {
-                    $event = $entity->getTypeTags($position);
-                    $letter = '';
-                }
-                break;
-
-            default:
-                $event = $entity->getTypeTags($position);
-                break;
-        }
-
-        return [$offset, $letter, $event];
+        return [$letter, $event];
     }
 
     // private function handleBlockquote(array $message_array,Entity $entity)
