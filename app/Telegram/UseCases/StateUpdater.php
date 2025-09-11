@@ -51,19 +51,18 @@ class StateUpdater {
             $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
         }
 
-        dd($text);
         $user_id = $state->actor_id;
 
         $message = $this->buildPostMessage($action, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
 
-        // $state->delete();
+        $state->delete();
 
         match($action) {
             TelegramActions::sendDocument => $this->telegramRequest->sendDocument($message),
             TelegramActions::sendMessage => $this->telegramRequest->sendMessage($message),
             TelegramActions::sendPhoto => $this->telegramRequest->sendPhoto($message)
         };
-        dd(1);
+
         return true;
     }
 

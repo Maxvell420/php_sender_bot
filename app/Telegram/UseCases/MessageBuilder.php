@@ -152,45 +152,9 @@ class MessageBuilder {
          */
 
         $events = [];
-        $blockQuoute = [];
 
         foreach($entities as $entity) {
             if( !$entity->isAllowedType() ) {
-                continue;
-            }
-
-            if( $entity->type == 'blockquote' ) {
-                $blockQuoute[] = $entity;
-                continue;
-            }
-        }
-
-        foreach($blockQuoute as $entity) {
-            $offset = $entity->offset;
-            $length = $entity->length - 1;
-            $events[$offset][EntityPosition::Start->value][] = $entity;
-
-            for($i = $offset; $i < $offset + $length; $i++) {
-                $letter = $message_array[$i];
-
-                if( $letter != "\n" ) {
-                    continue;
-                }
-
-                    // Я не до конца понял почему так)
-                $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
-            }
-
-            $events[$offset + $length][EntityPosition::End->value][] = $entity;
-        }
-
-        foreach($entities as $entity) {
-            if( !$entity->isAllowedType() ) {
-                continue;
-            }
-
-            if( $entity->type == 'blockquote' ) {
-                // $blockQuoute[] = $entity;
                 continue;
             }
 
@@ -206,18 +170,18 @@ class MessageBuilder {
                 $events[$offset + $length][EntityPosition::End->value][] = $entity;
             }
 
-            // if( $entity->type == 'blockquote' ) {
-            //     for($i = $offset; $i < $offset + $length; $i++) {
-            //         $letter = $message_array[$i];
+            if( $entity->type == 'blockquote' ) {
+                for($i = $offset; $i < $offset + $length; $i++) {
+                    $letter = $message_array[$i];
 
-            //         if( $letter != "\n" ) {
-            //             continue;
-            //         }
+                    if( $letter != "\n" ) {
+                        continue;
+                    }
 
-            //         // Я не до конца понял почему так)
-            //         $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
-            //     }
-            // }
+                    // Я не до конца понял почему так)
+                    $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+                }
+            }
         }
 
         return $events;
@@ -252,8 +216,19 @@ class MessageBuilder {
 
             if( isset($letter_events[EntityPosition::End->value]) ) {
                 $end_events = [];
+                $blockQoute = [];
 
                 foreach($letter_events[EntityPosition::End->value] as $event) {
+                    if( $event->type == 'blockquote' ) {
+                        $blockQoute[] = $event;
+                        continue;
+                    }
+
+                    [$letter, $event] = $this->handleEvent(EntityPosition::End, $event, $message_array, $position);
+                    $end_events[] = $event;
+                }
+
+                foreach($blockQoute as $event) {
                     [$letter, $event] = $this->handleEvent(EntityPosition::End, $event, $message_array, $position);
                     $end_events[] = $event;
                 }
