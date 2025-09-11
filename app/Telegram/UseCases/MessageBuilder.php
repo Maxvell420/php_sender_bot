@@ -146,46 +146,46 @@ class MessageBuilder {
         return $message_array;
     }
 
-    private function buildMessageEntitiesEvents(DataCollection $entities, array $message_array): array {
-        /**
-         * @var Entity[] $entities
-         */
+    // private function buildMessageEntitiesEvents(DataCollection $entities, array $message_array): array {
+    //     /**
+    //      * @var Entity[] $entities
+    //      */
 
-        $events = [];
+    //     $events = [];
 
-        foreach($entities as $entity) {
-            if( !$entity->isAllowedType() ) {
-                continue;
-            }
+    //     foreach($entities as $entity) {
+    //         if( !$entity->isAllowedType() ) {
+    //             continue;
+    //         }
 
-            $offset = $entity->offset;
-            $length = $entity->length - 1;
+    //         $offset = $entity->offset;
+    //         $length = $entity->length - 1;
 
-            $events[$offset][EntityPosition::Start->value][] = $entity;
+    //         $events[$offset][EntityPosition::Start->value][] = $entity;
 
-            if( $entity->type == 'custom_emoji' && isset($events[$offset + $length][EntityPosition::End->value]) ) {
-                array_unshift($events[$offset + $length][EntityPosition::End->value], $entity);
-            }
-            else {
-                $events[$offset + $length][EntityPosition::End->value][] = $entity;
-            }
+    //         if( $entity->type == 'custom_emoji' && isset($events[$offset + $length][EntityPosition::End->value]) ) {
+    //             array_unshift($events[$offset + $length][EntityPosition::End->value], $entity);
+    //         }
+    //         else {
+    //             $events[$offset + $length][EntityPosition::End->value][] = $entity;
+    //         }
 
-            if( $entity->type == 'blockquote' ) {
-                for($i = $offset; $i < $offset + $length; $i++) {
-                    $letter = $message_array[$i];
+    //         if( $entity->type == 'blockquote' ) {
+    //             for($i = $offset; $i < $offset + $length; $i++) {
+    //                 $letter = $message_array[$i];
 
-                    if( $letter != "\n" ) {
-                        continue;
-                    }
+    //                 if( $letter != "\n" ) {
+    //                     continue;
+    //                 }
 
-                    // Я не до конца понял почему так)
-                    $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
-                }
-            }
-        }
+    //                 // Я не до конца понял почему так)
+    //                 $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+    //             }
+    //         }
+    //     }
 
-        return $events;
-    }
+    //     return $events;
+    // }
 
     public function buildCopyMessage(int $chat_id, int $from_chat_id, int $message_id): array {
         return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_id' => $message_id];
@@ -194,9 +194,7 @@ class MessageBuilder {
     public function buildBeautifulMessage(string $message, DataCollection $entities): string {
         $events = [];
         $message_array = mb_str_split($message);
-        // $message_array = $this->buildEventdependedMessageArray($message_array, $entities);
         $message_array = $this->buildMultyButeMessageArray($message_array);
-        // dd($message_array);
         $events = $this->buildMessageEntitiesEvents($entities, $message_array);
         /**
          * @var Entity[] $entities
