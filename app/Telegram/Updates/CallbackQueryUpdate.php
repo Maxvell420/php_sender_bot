@@ -2,11 +2,13 @@
 
 namespace App\Telegram\Updates;
 
+use App\Telegram\Enums\UpdateType;
 use Spatie\LaravelData\Data;
 use App\Telegram\Updates\Particles;
 use App\Telegram\Updates\Particles\Document;
 use Spatie\LaravelData\Attributes\Validation;
 use App\Telegram\Values\CallbackDataValues;
+use Spatie\LaravelData\DataCollection;
 
 class CallbackQueryUpdate extends Data implements Update {
 
@@ -20,6 +22,10 @@ class CallbackQueryUpdate extends Data implements Update {
 
     public function getUserId(): int {
         return $this->callback_query->from->getUserId();
+    }
+
+    public function getMessageFromId(): int {
+        return $this->callback_query->message->from->id;
     }
 
     public function getUpdateId(): int {
@@ -41,6 +47,14 @@ class CallbackQueryUpdate extends Data implements Update {
 
     public function hasDocument(): bool {
         return $this->callback_query->hasDocument();
+    }
+
+    public function getCaptionEntities(): ?DataCollection {
+        return $this->callback_query->message->caption_entities;
+    }
+
+    public function getTextEntities(): ?DataCollection {
+        return $this->callback_query->message->entities;
     }
 
     public function hasText(): bool {
@@ -65,5 +79,9 @@ class CallbackQueryUpdate extends Data implements Update {
 
     public function getData(): CallbackDataValues {
         return $this->callback_query->data;
+    }
+
+    public function getType(): UpdateType {
+        return UpdateType::CallbackQuery;
     }
 }

@@ -11,21 +11,18 @@ use App\Telegram\Enums\ {
     EntityPosition,
     TelegramEntities
 };
+use App\Telegram\Exceptions\TelegramBaseException;
 
 class MessageBuilder {
 
     public function buildMessage(int $chat_id, string $text, ?InlineKeyboard $keyboard = null, array $params = []): array {
-        if( mb_strlen($text) >= 4096 ) {
-            // Сделать тут ошибки валидации
-        }
-
-        $data = ['chat_id' => $chat_id, 'text' => $text];
+        $data = ['chat_id' => $chat_id];
 
         if( isset($params['parse_mode']) ) {
             $data['parse_mode'] = 'MarkdownV2';
         }
 
-        $data = $this->handleParts($data, $keyboard);
+        $data = $this->handleParts(data:$data, keyboard:$keyboard, text:$text);
         return $data;
     }
 
@@ -40,7 +37,7 @@ class MessageBuilder {
         return $data;
     }
 
-    public function buildDocument(int $chat_id, ?string $caption = null, string $file_id, ?InlineKeyboard $keyboard = null, array $params = []): array {
+    public function buildDocument(int $chat_id, string $file_id, ?string $caption = null, ?InlineKeyboard $keyboard = null, array $params = []): array {
         $data = ['chat_id' => $chat_id, 'document' => $file_id];
 
         if( isset($params['parse_mode']) ) {
@@ -51,7 +48,7 @@ class MessageBuilder {
         return $data;
     }
 
-    public function buildPhoto(int $chat_id, ?string $caption = null, string $file_id, ?InlineKeyboard $keyboard = null, array $params = []): array {
+    public function buildPhoto(int $chat_id, string $file_id, ?string $caption = null, ?InlineKeyboard $keyboard = null, array $params = []): array {
         $data = ['chat_id' => $chat_id, 'photo' => $file_id];
 
         if( isset($params['parse_mode']) ) {
@@ -62,16 +59,60 @@ class MessageBuilder {
         return $data;
     }
 
-    private function handleParts(array $data, ?InlineKeyboard $keyboard = null, ?string $caption = null): array {
+    private function handleParts(array $data, ?InlineKeyboard $keyboard = null, ?string $caption = null, ?string $text = null): array {
+        if( $caption ) {
+            $length = mb_strlen($caption);
+
+            if( $length > 1024 ) {
+                throw new TelegramBaseException('Длина сообщения превышает 1024 символа, текущее значение: ' . $length);
+            }
+
+            $data['caption'] = $caption;
+        }
+
+        if( $text ) {
+            $length = mb_strlen($text);
+
+            if( $length > 4096 ) {
+                throw new TelegramBaseException('Длина сообщения превышает 4096 символа, текущее значение: ' . $length);
+            }
+
+            $data['text'] = $text;
+        }
+
         if( $keyboard ) {
             $data['reply_markup'] = json_encode($keyboard->buildKeyboardData());
         }
 
-        if( $caption ) {
-            $data['caption'] = $caption;
+        return $data;
+    }
+
+    private function buildMultyButeMessageArray(array $message_array): array {
+        for($i = 0; $i < count($message_array); $i++) {
+            $letter = $message_array[$i];
+
+            if( !$this->isEmojiWithOrd($letter) ) {
+                continue;
+            }
+
+            $insertArray = [];
+
+            for($j = 1; $j < 2; $j++) {
+                $insertArray[] = '';
+            }
+
+            // $fault += strlen($letter);
+
+            array_splice($message_array, $i + 1, 0, $insertArray);
         }
 
-        return $data;
+        return $message_array;
+    }
+
+    private function isEmojiWithOrd($char) {
+        if( strlen($char) === 0 ) return false;
+        $code = ord($char[0]);
+        return ($code >= 0xF0 && $code <= 0xF4);
     }
 
     private function buildEventdependedMessageArray(array $message_array, DataCollection $entities): array {
@@ -111,9 +152,45 @@ class MessageBuilder {
          */
 
         $events = [];
+        $blockQuoute = [];
 
         foreach($entities as $entity) {
             if( !$entity->isAllowedType() ) {
+                continue;
+            }
+
+            if( $entity->type == 'blockquote' ) {
+                $blockQuoute[] = $entity;
+                continue;
+            }
+        }
+
+        foreach($blockQuoute as $entity) {
+            $offset = $entity->offset;
+            $length = $entity->length - 1;
+            $events[$offset][EntityPosition::Start->value][] = $entity;
+
+            for($i = $offset; $i < $offset + $length; $i++) {
+                $letter = $message_array[$i];
+
+                if( $letter != "\n" ) {
+                    continue;
+                }
+
+                    // Я не до конца понял почему так)
+                $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+            }
+
+            $events[$offset + $length][EntityPosition::End->value][] = $entity;
+        }
+
+        foreach($entities as $entity) {
+            if( !$entity->isAllowedType() ) {
+                continue;
+            }
+
+            if( $entity->type == 'blockquote' ) {
+                // $blockQuoute[] = $entity;
                 continue;
             }
 
@@ -129,44 +206,44 @@ class MessageBuilder {
                 $events[$offset + $length][EntityPosition::End->value][] = $entity;
             }
 
-            if( $entity->type == 'blockquote' ) {
-                for($i = $offset; $i < $offset + $length; $i++) {
-                    $letter = $message_array[$i];
+            // if( $entity->type == 'blockquote' ) {
+            //     for($i = $offset; $i < $offset + $length; $i++) {
+            //         $letter = $message_array[$i];
 
-                    if( $letter != "\n" ) {
-                        continue;
-                    }
+            //         if( $letter != "\n" ) {
+            //             continue;
+            //         }
 
-                    // Я не до конца понял почему так)
-                    $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
-                }
-            }
+            //         // Я не до конца понял почему так)
+            //         $events[$i + 1][EntityPosition::Start->value][] = new Entity('blockquote', 0, 0);
+            //     }
+            // }
         }
 
         return $events;
     }
 
+    public function buildCopyMessage(int $chat_id, int $from_chat_id, int $message_id): array {
+        return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_id' => $message_id];
+    }
+
     public function buildBeautifulMessage(string $message, DataCollection $entities): string {
         $events = [];
-
         $message_array = mb_str_split($message);
-        $message_array = $this->buildEventdependedMessageArray($message_array, $entities);
+        // $message_array = $this->buildEventdependedMessageArray($message_array, $entities);
+        $message_array = $this->buildMultyButeMessageArray($message_array);
+        // dd($message_array);
         $events = $this->buildMessageEntitiesEvents($entities, $message_array);
         /**
          * @var Entity[] $entities
          */
-
-
         $beautifulArray = [];
 
         for($position = 0; $position < count($message_array); $position++) {
             $letter = $message_array[$position];
 
-            if( $this->isSpecialLetter($letter) ) {
-                $letter = '\\' . $letter;
-            }
-
             if( !isset($events[$position]) ) {
+                $letter = $this->handleSpecialLetter($letter);
                 $beautifulArray[] = $letter;
                 continue;
             }
@@ -220,7 +297,7 @@ class MessageBuilder {
                 case TelegramEntities::Blockquote->value:
                     $event = $entity->getTypeTags($position);
                     // Проставляю туда где нету пропуска на другую строку т.к. эвент этим должен закрываться
-                    if( $message_array[$eventPosition + 1] != "\n" ) {
+                    if( !isset($message_array[$eventPosition + 1]) || $message_array[$eventPosition + 1] != "\n" ) {
                         $event .= "\n";
                     }
                     break;
@@ -231,39 +308,33 @@ class MessageBuilder {
             }
         }
 
-        if( $this->isSpecialLetter($letter) ) {
-            $letter = '\\' . $letter;
-        }
+        $letter = $this->handleSpecialLetter($letter);
 
         return [$letter, $event];
     }
 
-    // private function handleBlockquote(array $message_array,Entity $entity)
-
-    private function isSpecialLetter(string $letter): bool {
-        return in_array(
-            $letter,
-            [
-                '_',
-                '*',
-                '[',
-                ']',
-                '(',
-                ')',
-                '~',
-                '`',
-                '>',
-                '#',
-                '+',
-                '-',
-                '=',
-                '|',
-                '{',
-                '}',
-                '.',
-                '!',
-                '-'
-            ]
-        );
+    private function handleSpecialLetter(string $letter): string {
+        return match($letter) {
+            '_' => "\\" . $letter,
+            '*' => "\\" . $letter,
+            '[' => "\\" . $letter,
+            ']' => "\\" . $letter,
+            '(' => "\\" . $letter,
+            ')' => "\\" . $letter,
+            '~' => "\\" . $letter,
+            '`' => "\\" . $letter,
+            '>' => "\\" . $letter,
+            '#' => "\\" . $letter,
+            '+' => "\\" . $letter,
+            '-' => "\\" . $letter,
+            '=' => "\\" . $letter,
+            '|' => "\\" . $letter,
+            '{' => "\\" . $letter,
+            '}' => "\\" . $letter,
+            '.' => "\\" . $letter,
+            '!' => "\\" . $letter,
+            '-' => "\\" . $letter,
+            default => $letter
+        };
     }
 }

@@ -2,47 +2,54 @@
 
 namespace App\Telegram\UseCases;
 
-use App\Libs\Telegram\TelegramActions;
 use App\Telegram\Updates\MessageUpdate;
-use App\Telegram\Updates\Update;
 use App\Telegram\Enums;
 use App\Models\ {
     User,
-    Post
+    Post,
+    State
 };
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Values\CallbackDataValues;
 
-class MessageUpdater extends UpdateHandler {
+class MessageUpdater {
 
     public function __construct(
         private TelegramRequestFacade $telegramRequest,
         private InlineBuilder $inlineBuilder,
         private MessageBuilder $messageBuilder,
+        private StateUpdater $stateUpdater
     ) {}
 
-    public function handleUpdate(Update $values): void {
-        /**
-         * @var MessageUpdate $values
-         */
-
-        $user_id = $values->findMessageFromId();
+    public function handleUpdate(MessageUpdate $update): void {
+        $user_id = $update->findMessageFromId();
 
         if( !$user_id ) {
             // Если пришло не от бота то как-то обработать
             return;
         }
 
-        if( $values->hasBotCommands() ) {
-            $this->handleBotCommand($values);
+        $state = new State();
+        $state = $state->findByUser($user_id);
+
+        // Обработка стейта
+        if( $state ) {
+            $handled = $this->stateUpdater->handleUpdate($update, $state);
+
+            if( $handled ) {
+                return;
+            }
+        }
+
+        if( $update->hasBotCommands() ) {
+            $this->handleBotCommand($update);
         }
         else {
-            $builder = new MessageBuilder;
-            $message = $builder->buildMessage(
-                $user_id,
-                "Я всего лишь бот :) Если возникли какие-то вопросы, то переходи в канал. Чтобы получить гайд, просто нажми /start. Все важные анонсы я пришлю сам!"
+            $message = $this->messageBuilder->buildMessage(
+                chat_id: $user_id,
+                text: 'Я всего лишь бот :) Если возникли какие-то вопросы, то переходи в канал. Чтобы получить гайд, просто нажми /start. Все важные анонсы я пришлю сам!'
             );
-            $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
+            $this->telegramRequest->sendMessage($message);
         }
     }
 
@@ -80,6 +87,7 @@ class MessageUpdater extends UpdateHandler {
             return;
         }
 
+        // Как-то надо подругому получить эти захардкоженные штуки
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');
@@ -95,9 +103,9 @@ class MessageUpdater extends UpdateHandler {
 
         $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
 
-        $message = $this->messageBuilder->buildDocument($user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);
+        $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);
 
-        $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
+        $this->telegramRequest->sendDocument($message);
     }
 
     private function createNewUser(int $tg_id, bool $member, ?string $user_name = null): User {

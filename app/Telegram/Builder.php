@@ -10,6 +10,7 @@ use App\Telegram\UseCases\ {
     MessageUpdater,
     MyChatMemberUpdater,
     StateUpdater,
+    TelegramWrongMessagesHandler,
     Updates
 };
 
@@ -19,7 +20,7 @@ class Builder {
 
     protected function buildCallbackQueryUpdater(): CallbackQueryUpdater {
         return new CallbackQueryUpdater(
-            telegramRequest:$this->telegramRequest,
+            telegramRequest:$this->buildTelegramRequestFacade(),
             inlineBuilder:$this->buildInlineBuilder(),
             messageBuilder:$this->buildMessageBuilder()
         );
@@ -34,7 +35,7 @@ class Builder {
     }
 
     protected function buildJobsHandler(): JobsHandler {
-        return new JobsHandler(tgRequestFacade:$this->buildTelegramRequestFacade(), messageBuilder:$this->buildMessageBuilder());
+        return new JobsHandler(telegramRequest:$this->buildTelegramRequestFacade(), messageBuilder:$this->buildMessageBuilder());
     }
 
     protected function buildMessageBuilder(): MessageBuilder {
@@ -45,11 +46,12 @@ class Builder {
         return new MessageUpdater(
             telegramRequest:$this->buildTelegramRequestFacade(),
             inlineBuilder:$this->buildInlineBuilder(),
-            messageBuilder:$this->buildMessageBuilder()
+            messageBuilder:$this->buildMessageBuilder(),
+            stateUpdater:$this->buildStateUpdater()
         );
     }
 
-    protected function buildMyChatMemberUpdated(): MyChatMemberUpdater {
+    protected function buildMyChatMemberUpdater(): MyChatMemberUpdater {
         return new MyChatMemberUpdater(telegramRequest:$this->buildTelegramRequestFacade());
     }
 
@@ -62,6 +64,10 @@ class Builder {
     }
 
     protected function buildUpdates(): Updates {
-        return new Updates($this->buildTelegramRequestFacade());
+        return new Updates($this->telegramRequest);
+    }
+
+    protected function buildTelegramWrongMessageHandler(): TelegramWrongMessagesHandler {
+        return new TelegramWrongMessagesHandler();
     }
 }

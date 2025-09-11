@@ -44,21 +44,27 @@ class StateUpdater {
             $entities = $update->getTextEntities();
         }
         else {
-            return true;
+            return false;
         }
 
         if( !empty($entities) ) {
             $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
         }
 
+        dd($text);
         $user_id = $state->actor_id;
 
-        $message = $this->buildPostMessage(TelegramActions::sendMessage, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
-        $state->delete();
+        $message = $this->buildPostMessage($action, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
 
-        $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
+        // $state->delete();
 
-        return false;
+        match($action) {
+            TelegramActions::sendDocument => $this->telegramRequest->sendDocument($message),
+            TelegramActions::sendMessage => $this->telegramRequest->sendMessage($message),
+            TelegramActions::sendPhoto => $this->telegramRequest->sendPhoto($message)
+        };
+        dd(1);
+        return true;
     }
 
     private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id, array $params = []): array {
@@ -67,16 +73,16 @@ class StateUpdater {
             case TelegramActions::sendPhoto:
                 $photo = $update->getPhoto();
                 $file = array_pop($photo);
-                $message = $this->messageBuilder->buildPhoto($user_id, $message, $file['file_id'], $keyboard, $params);
+                $message = $this->messageBuilder->buildPhoto(chat_id:$user_id, caption:$message, file_id:$file['file_id'], keyboard:$keyboard, params:$params);
                 break;
 
             case TelegramActions::sendDocument:
                 $document = $update->getDocument();
-                $message = $this->messageBuilder->buildDocument($user_id, $message, $document->file_id, $keyboard, $params);
+                $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$document->file_id, keyboard:$keyboard, params:$params);
                 break;
 
             default:
-                $message = $this->messageBuilder->buildMessage($user_id, $message, $keyboard, $params);
+                $message = $this->messageBuilder->buildMessage(chat_id:$user_id, text:$message, keyboard:$keyboard, params:$params);
                 break;
         };
         return $message;

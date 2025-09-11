@@ -8,8 +8,8 @@ use App\Models\ {
     User
 };
 
-// Обработка различных ошибок
-class TelegramErrosHandler {
+// Обработка различных ошибок при отправки сообщений в телеграм
+class TelegramWrongMessagesHandler {
 
     private const string WRONG_REPLY_MARKUP = "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message";
 
@@ -27,7 +27,7 @@ class TelegramErrosHandler {
 
         match($action) {
             TelegramActions::editMessageReplyMarkup => $this->handleSendReplyMarkUp($data, $status, $error_message),
-            default => $this->handleSendData($data, $status, $error_message)
+            default => $this->handleSendData($data, $error_message)
         };
     }
 
@@ -39,8 +39,8 @@ class TelegramErrosHandler {
         $this->handleSendData($data, $status, $error_message);
     }
 
-    private function handleSendData(array $data, int $status, string $error_message): void {
-        $save_data = ['message' => $data, 'message' => $error_message];
+    private function handleSendData(array $data, string $error_message): void {
+        $save_data = ['message' => $error_message, 'data' => $data];
         $data = json_encode($save_data);
         $this->logError($data);
     }
@@ -50,10 +50,4 @@ class TelegramErrosHandler {
         $log->info = $message;
         $log->save();
     }
-
-    public function handleWrongUpdate(array $data): void {}
-
-    public function handleCodeError(string $message): void {}
-
-    public function handleException(string $message): void {}
 }

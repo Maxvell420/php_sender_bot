@@ -4,15 +4,10 @@ namespace App\Telegram\UseCases;
 
 use App\Telegram\Updates\MyChatMemberUpdate;
 use App\Models\User;
-use App\Telegram\Updates\Update as UpdateInterface;
 
-class MyChatMemberUpdater extends UpdateHandler {
+class MyChatMemberUpdater {
 
-    public function handleUpdate(UpdateInterface $values): void {
-        /**
-         * @var MyChatMemberUpdate $values
-         */
-
+    public function handleUpdate(MyChatMemberUpdate $values): void {
         $user_id = $values->getUserId();
         $user = (new User)->findByTgId($user_id);
         $status = $values->isMember();

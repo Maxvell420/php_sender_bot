@@ -2,7 +2,6 @@
 
 namespace App\Telegram\UseCases;
 
-use App\Libs\Telegram\TelegramActions;
 use App\Models\ {
     Job,
     JobUser
@@ -24,23 +23,16 @@ class JobsHandler {
         $count = 0;
 
         $update = json_decode($job->json, true);
-
-        foreach(TelegramActions::cases() as $case) {
-            if( $case->value == $update['action'] ) {
-                $action = $case;
-            }
-        }
-
         $userJobs = new JobUser();
         $userJobs = $userJobs->listByJob($job->id);
-        $actor_id = $job->actor_id;
         /**
          * @var JobUser[] $userJobs
          */
+        $message = $update['message'];
+
+        $actor_id = $job->actor_id;
 
         foreach($userJobs as $user) {
-            $count++;
-
             if( $user->isCompleted() ) {
                 continue;
             }
@@ -49,15 +41,15 @@ class JobsHandler {
                 continue;
             }
 
+            $count++;
             $update['message']['chat_id'] = $user->actor_id;
-
-            $this->telegramRequest->sendMessage($action, $update['message']);
+            $this->telegramRequest->copyMessage($message);
             $user->complete();
             $user->save();
         }
 
-        $message = $this->messageBuilder->buildMessage($job->actor_id, "Пост был разослан $count пользователям");
-        $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
+        $message = $this->messageBuilder->buildMessage(chat_id:$job->actor_id, text:"Пост был разослан $count пользователям");
+        $this->telegramRequest->sendMessage($message);
         $job->complete();
         $job->save();
     }

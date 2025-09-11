@@ -46,8 +46,13 @@ class Entity extends Data {
             'pre' => $this->getPreTags(),
             'spoiler' => ['start' => '||', 'end' => '||'],
             'blockquote' => ['start' => ">", 'end' => ""],
-            'custom_emoji' => $this->getCustomEmojiTags()
+            'custom_emoji' => $this->getCustomEmojiTags(),
+            'text_link' => $this->getTextLinkTags()
         ];
+    }
+
+    private function getTextLinkTags(): array {
+        return ['start' => "[", 'end' => "]($this->url)"];
     }
 
     private function getCustomEmojiTags(): array {

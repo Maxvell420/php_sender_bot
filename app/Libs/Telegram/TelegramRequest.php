@@ -2,7 +2,6 @@
 
 namespace App\Libs\Telegram;
 
-use App\Http\Exceptions\TelegramApiException;
 use Exception;
 
 class TelegramRequest {
@@ -63,7 +62,6 @@ class TelegramRequest {
         }
 
         $response = curl_exec($curl);
-
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         $response = json_decode($response, true);
