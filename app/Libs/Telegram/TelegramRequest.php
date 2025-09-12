@@ -69,15 +69,15 @@ class TelegramRequest
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        $response = json_decode($response, true);
+        $decoded_response = json_decode($response, true);
 
         if ($httpCode == 200) {
-            return $response;
+            return $decoded_response;
         } elseif (str_starts_with($httpCode, 4)) {
-            throw new TelegramApiException($response['description'], $httpCode);
+            throw new TelegramApiException($decoded_response['description'], $httpCode);
         } else {
             // телега неверно ответила?
-            throw new Exception('WRONG_CURL_RESPONSE', $httpCode);
+            throw new Exception($response, $httpCode);
         }
     }
 }
