@@ -39,6 +39,7 @@ class Demon
             $updates = $useCase->getUpdates($update_id, 10);
 
             if (empty($updates)) {
+                print('Какая-то ошибка из телеги');
                 sleep(env('WRONG_ANSWER'));
                 continue;
             }
