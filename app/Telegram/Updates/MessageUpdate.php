@@ -4,8 +4,11 @@ namespace App\Telegram\Updates;
 
 use App\Telegram\Enums\UpdateType;
 use Spatie\LaravelData\Data;
-use App\Telegram\Updates\Particles;
-use App\Telegram\Updates\Particles\Document;
+use App\Telegram\Updates\Particles\ {
+    Animation,
+    Document,
+    Video
+};
 use Spatie\LaravelData\Attributes\Validation;
 use Spatie\LaravelData\DataCollection;
 
@@ -86,5 +89,21 @@ class MessageUpdate extends Data implements Update {
 
     public function getType(): UpdateType {
         return UpdateType::Message;
+    }
+
+    public function hasAnimation(): bool {
+        return (bool) $this->message->animation;
+    }
+
+    public function getAnimation(): Animation {
+        return $this->message->animation;
+    }
+
+    public function hasVideo(): bool {
+        return (bool) $this->message->video;
+    }
+
+    public function getVideo(): Video {
+        return $this->message->getVideo();
     }
 }

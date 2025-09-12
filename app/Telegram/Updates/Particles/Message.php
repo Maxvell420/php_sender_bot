@@ -6,14 +6,12 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
 use Spatie\LaravelData\DataCollection;
 
-class Message extends Data
-{
+class Message extends Data {
 
     public function __construct(
         #[
-            Validation\Required,
-            Validation\Numeric
-        ]
+        Validation\Required,
+        Validation\Numeric]
         public int $message_id,
         public Chat $chat,
         public ?From $from = null,
@@ -29,22 +27,21 @@ class Message extends Data
         /**
          * @var Entity[]|DataCollection $caption_entities
          */
-        public ?DataCollection $caption_entities = null
+        public ?DataCollection $caption_entities = null,
+        public ?Animation $animation = null,
+        public ?Video $video = null
     ) {}
 
-    public function getUserId(): int
-    {
+    public function getUserId(): int {
         return (int) $this->from?->getUserId();
     }
 
-    public function getUserName(): ?string
-    {
+    public function getUserName(): ?string {
         return $this->from->getUserName();
     }
 
-    public function hasBotCommands(): bool
-    {
-        if (!$this->entities) {
+    public function hasBotCommands(): bool {
+        if( !$this->entities ) {
             return false;
         }
 
@@ -54,8 +51,8 @@ class Message extends Data
          * @var Entity $entity
          */
 
-        foreach ($this->entities as $entity) {
-            if ($entity->isCommand() == 'bot_command') {
+        foreach($this->entities as $entity) {
+            if( $entity->isCommand() == 'bot_command' ) {
                 $has_command = true;
             }
         }
@@ -63,33 +60,35 @@ class Message extends Data
         return $has_command;
     }
 
-    public function findText(): ?string
-    {
+    public function findText(): ?string {
         return $this->text;
     }
 
-    public function findMessageFromId(): ?int
-    {
+    public function findMessageFromId(): ?int {
         return $this->from?->getUserId();
     }
 
-    public function getMessageId(): int
-    {
+    public function getMessageId(): int {
         return $this->message_id;
     }
 
-    public function hasDocument(): bool
-    {
+    public function hasDocument(): bool {
         return (bool) $this->document;
     }
 
-    public function hasPhoto(): bool
-    {
+    public function hasPhoto(): bool {
         return (bool) $this->photo;
     }
 
-    public function hasText(): bool
-    {
+    public function hasText(): bool {
         return (bool) $this->text;
+    }
+
+    public function getAnimation(): Animation {
+        return $this->animation;
+    }
+
+    public function getVideo(): Video {
+        return $this->video;
     }
 }
