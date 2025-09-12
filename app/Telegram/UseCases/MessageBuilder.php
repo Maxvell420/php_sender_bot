@@ -226,7 +226,7 @@ class MessageBuilder
                 $end_events = [];
                 $blockQoute = [];
 
-                foreach ($letter_events[EntityPosition::End->value] as $event) {
+                foreach (array_reverse($letter_events[EntityPosition::End->value]) as $event) {
                     if ($event->type == 'blockquote') {
                         $blockQoute[] = $event;
                         continue;
