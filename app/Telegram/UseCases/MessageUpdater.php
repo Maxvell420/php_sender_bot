@@ -5,12 +5,14 @@ namespace App\Telegram\UseCases;
 use App\Telegram\Updates\MessageUpdate;
 use App\Telegram\Enums;
 use App\Models\ {
+    Log,
     User,
     Post,
     State
 };
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Values\CallbackDataValues;
+use Illuminate\Database\Eloquent\Collection;
 
 class MessageUpdater {
 
@@ -45,12 +47,16 @@ class MessageUpdater {
             $this->handleBotCommand($update);
         }
         else {
-            $message = $this->messageBuilder->buildMessage(
-                chat_id: $user_id,
-                text: 'Я всего лишь бот :) Если возникли какие-то вопросы, то переходи в канал. Чтобы получить гайд, просто нажми /start. Все важные анонсы я пришлю сам!'
-            );
-            $this->telegramRequest->sendMessage($message);
+            $this->sendDummyMessage($user_id);
         }
+    }
+
+    private function sendDummyMessage(int $user_id): void {
+        $message = $this->messageBuilder->buildMessage(
+            chat_id: $user_id,
+            text: 'Я всего лишь бот :) Если возникли какие-то вопросы, то переходи в канал. Чтобы получить гайд, просто нажми /start. Все важные анонсы я пришлю сам!'
+        );
+        $this->telegramRequest->sendMessage($message);
     }
 
     private function handleBotCommand(MessageUpdate $data) {
@@ -77,8 +83,55 @@ class MessageUpdater {
     private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void {
         match ($case) {
             Enums\Commands::Start => $this->handleStart($data, $user),
+            Enums\Commands::Logs  => $this->handleLogs($data, $user),
             default => ''
         };
+    }
+
+    private function handleLogs(MessageUpdate $data, User $user): void {
+        if( !$user->isAdmin() ) {
+            $this->sendDummyMessage($user->tg_id);
+            return;
+        }
+
+        $logs = new Log();
+        /** @var Collection $logs */
+        $logs = $logs->listLast();
+
+        if( $logs->isEmpty() ) {
+            $text = 'На данный момент логов нет';
+            $message = $this->messageBuilder->buildMessage($user->tg_id, 'На данный момент логов нет');
+            $this->telegramRequest->sendMessage($message);
+            return;
+        }
+        else {
+            $text = '';
+
+            $length = 0;
+
+            /** @var Log $log */
+
+            foreach($logs as $log) {
+                $length = mb_strlen($text);
+
+                if( $length > 3500 ) {
+                    break;
+                }
+
+                $info = $log->info;
+
+                $info = json_decode($info, true);
+
+                if( !isset($info['message']) ) {
+                    continue;
+                }
+
+                $text .= $info['message'] . "\n";
+            }
+        }
+
+        $message = $this->messageBuilder->buildMessage($user->tg_id, $text);
+        $this->telegramRequest->sendMessage($message);
     }
 
     public function handleStart(MessageUpdate $data, User $user): void {
