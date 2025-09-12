@@ -55,6 +55,7 @@ class TelegramRequestFacade extends Builder
             $useCase = $this->buildTelegramWrongMessageHandler();
             $useCase->handleTelegramRequest($action, $data, $e->getCode(), $e->getMessage());
         } catch (Exception $e) {
+            print('Какая-то ошибка из телеги' . "\n");
             $log = new Log();
             $log->info(json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]));
         }
