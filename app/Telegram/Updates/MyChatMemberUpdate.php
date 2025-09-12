@@ -2,6 +2,7 @@
 
 namespace App\Telegram\Updates;
 
+use App\Telegram\Enums\UpdateType;
 use Spatie\LaravelData\Data;
 use App\Telegram\Updates\Particles;
 use Spatie\LaravelData\Attributes\Validation;
@@ -34,5 +35,9 @@ class MyChatMemberUpdate extends Data implements Update {
     public function hasFrom(): bool {
         $from = $this->my_chat_member->from;
         return isset($from);
+    }
+
+    public function getType(): UpdateType {
+        return UpdateType::MyChatMember;
     }
 }

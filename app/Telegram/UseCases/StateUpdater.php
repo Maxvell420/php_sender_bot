@@ -3,65 +3,91 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Updates\MessageUpdate;
 use App\Models\State;
-use App\Telegram\{
+use App\Telegram\ {
     Enums,
+    TelegramRequestFacade,
     Values
 };
 use App\Telegram\InlineKeyboard\InlineKeyboard;
 
-class StateUpdater
-{
+class StateUpdater {
 
     public function __construct(
-        private TelegramRequest $telegramRequest,
-        private InlineBuilder $inlineBuilder = new InlineBuilder,
-        private MessageBuilder $messageBuilder = new MessageBuilder,
+        private TelegramRequestFacade $telegramRequest,
+        private InlineBuilder $inlineBuilder,
+        private MessageBuilder $messageBuilder,
     ) {}
 
-    public function handleUpdate(MessageUpdate $update, State $state): bool
-    {
+    public function handleUpdate(MessageUpdate $update, State $state): bool {
         return match ($state->state_id) {
             Enums\States::Create_post->value => $this->handleCreatePost($update, $state),
             default => false
         };
     }
 
-    private function handleCreatePost(MessageUpdate $update, State $state): bool
-    {
-        $not_handled = true;
-        $keyboard = $this->buildCreatePostKeyboard();
+    private function handleCreatePost(MessageUpdate $update, State $state): bool {
+        if( $update->hasDocument() ) {
+            $action = TelegramActions::sendDocument;
+            $text = $update->getCaption();
+            $entities = $update->getCaptionEntities();
+        }
+        elseif( $update->hasPhoto() ) {
+            $action = TelegramActions::sendPhoto;
+            $text = $update->getCaption();
+            $entities = $update->getCaptionEntities();
+        }
+        elseif( $update->hasText() ) {
+            $action = TelegramActions::sendMessage;
+            $text = $update->findText();
+            $entities = $update->getTextEntities();
+        }
+        else {
+            return false;
+        }
+
+        if( !empty($entities) ) {
+            $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
+        }
+
         $user_id = $state->actor_id;
 
-        if ($update->hasDocument()) {
-            $document = $update->getDocument();
-            $message = $this->messageBuilder->buildDocument($user_id, $update->getCaption(), $document->file_id, $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $message);
-            $not_handled = false;
-        } elseif ($update->hasPhoto()) {
-            $photo = $update->getPhoto();
-            $file = array_pop($photo);
-            $message = $this->messageBuilder->buildPhoto($user_id, $update->getCaption(), $file['file_id'], $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendPhoto, $message);
-            $not_handled = false;
-        } elseif ($update->hasText()) {
-            $text = $update->findText();
-            $message = $this->messageBuilder->buildMessage($user_id, $text, $keyboard);
-            $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $message);
-            $not_handled = false;
-        }
+        $message = $this->buildPostMessage($action, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
 
-        if (!$not_handled) {
-            $state->delete();
-        }
+        $state->delete();
 
-        return $not_handled;
+        match($action) {
+            TelegramActions::sendDocument => $this->telegramRequest->sendDocument($message),
+            TelegramActions::sendMessage => $this->telegramRequest->sendMessage($message),
+            TelegramActions::sendPhoto => $this->telegramRequest->sendPhoto($message)
+        };
+
+        return true;
     }
 
-    private function buildCreatePostKeyboard(): InlineKeyboard
-    {
+    private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id, array $params = []): array {
+        $keyboard = $this->buildCreatePostKeyboard();
+        switch($type) {
+            case TelegramActions::sendPhoto:
+                $photo = $update->getPhoto();
+                $file = array_pop($photo);
+                $message = $this->messageBuilder->buildPhoto(chat_id:$user_id, caption:$message, file_id:$file['file_id'], keyboard:$keyboard, params:$params);
+                break;
+
+            case TelegramActions::sendDocument:
+                $document = $update->getDocument();
+                $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$document->file_id, keyboard:$keyboard, params:$params);
+                break;
+
+            default:
+                $message = $this->messageBuilder->buildMessage(chat_id:$user_id, text:$message, keyboard:$keyboard, params:$params);
+                break;
+        };
+        return $message;
+    }
+
+    private function buildCreatePostKeyboard(): InlineKeyboard {
         $yesData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'yes');
         $noData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'no');
         $yesButton = $this->inlineBuilder->buildDataButton('Да', json_encode($yesData));

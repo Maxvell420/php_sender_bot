@@ -8,4 +8,5 @@ enum TelegramActions: string {
     case sendDocument = 'sendDocument';
     case sendPhoto = 'sendPhoto';
     case editMessageReplyMarkup = 'editMessageReplyMarkup';
+    case copyMessage = 'copyMessage';
 }
