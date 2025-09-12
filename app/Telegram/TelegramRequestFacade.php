@@ -54,6 +54,9 @@ class TelegramRequestFacade extends Builder
         } catch (TelegramApiException $e) {
             $useCase = $this->buildTelegramWrongMessageHandler();
             $useCase->handleTelegramRequest($action, $data, $e->getCode(), $e->getMessage());
+        } catch (Exception $e) {
+            $log = new Log();
+            $log->info(json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]));
         }
     }
 }
