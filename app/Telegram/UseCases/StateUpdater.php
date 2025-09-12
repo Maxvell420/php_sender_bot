@@ -66,7 +66,7 @@ class StateUpdater {
 
         $message = $this->buildPostMessage($action, $update, $text, $user_id, ['parse_mode' => 'MarkdownV2']);
 
-        // $state->delete();
+        $state->delete();
 
         match ($action) {
             TelegramActions::sendDocument => $this->telegramRequest->sendDocument($message),

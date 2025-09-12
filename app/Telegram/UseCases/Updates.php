@@ -61,12 +61,12 @@ class Updates {
             }
 
             $log = new Log();
-            $log->info = json_encode($e->getMessage());
+            $log->info = json_encode(['message' => $e->getMessage()]);
             $log->save();
         } catch (Error $e) {
             $facade->sendErrorMessage(env('TG_USER'), 'Что-то пошло нет так');
             $log = new Log();
-            $log->info = json_encode($e->getMessage());
+            $log->info = json_encode(['message' => $e->getMessage()]);
             $log->save();
         }
     }
