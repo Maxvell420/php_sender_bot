@@ -4,7 +4,7 @@ namespace App\Telegram\UseCases;
 
 use App\Telegram\Updates\MessageUpdate;
 use App\Telegram\Enums;
-use App\Models\ {
+use App\Models\{
     Log,
     User,
     Post,
@@ -14,7 +14,8 @@ use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Values\CallbackDataValues;
 use Illuminate\Database\Eloquent\Collection;
 
-class MessageUpdater {
+class MessageUpdater
+{
 
     public function __construct(
         private TelegramRequestFacade $telegramRequest,
@@ -23,10 +24,11 @@ class MessageUpdater {
         private StateUpdater $stateUpdater
     ) {}
 
-    public function handleUpdate(MessageUpdate $update): void {
+    public function handleUpdate(MessageUpdate $update): void
+    {
         $user_id = $update->findMessageFromId();
 
-        if( !$user_id ) {
+        if (!$user_id) {
             // Если пришло не от бота то как-то обработать
             return;
         }
@@ -35,23 +37,23 @@ class MessageUpdater {
         $state = $state->findByUser($user_id);
 
         // Обработка стейта
-        if( $state ) {
+        if ($state) {
             $handled = $this->stateUpdater->handleUpdate($update, $state);
 
-            if( $handled ) {
+            if ($handled) {
                 return;
             }
         }
 
-        if( $update->hasBotCommands() ) {
+        if ($update->hasBotCommands()) {
             $this->handleBotCommand($update);
-        }
-        else {
+        } else {
             $this->sendDummyMessage($user_id);
         }
     }
 
-    private function sendDummyMessage(int $user_id): void {
+    private function sendDummyMessage(int $user_id): void
+    {
         $message = $this->messageBuilder->buildMessage(
             chat_id: $user_id,
             text: 'Я всего лишь бот :) Если возникли какие-то вопросы, то переходи в канал. Чтобы получить гайд, просто нажми /start. Все важные анонсы я пришлю сам!'
@@ -59,11 +61,12 @@ class MessageUpdater {
         $this->telegramRequest->sendMessage($message);
     }
 
-    private function handleBotCommand(MessageUpdate $data) {
+    private function handleBotCommand(MessageUpdate $data)
+    {
         $user_id = $data->findMessageFromId();
         $user = new User()->findByTgId($user_id);
 
-        if( !$user ) {
+        if (!$user) {
             $user = $this->createNewUser($user_id, true, $data->getUserName());
             // Вообще такого быть не должно
         }
@@ -71,8 +74,8 @@ class MessageUpdater {
         // если это команда то в ней есть текст
         $text = $data->findText();
 
-        foreach(Enums\Commands::cases() as $case) {
-            if( str_contains($text, $case->value) ) {
+        foreach (Enums\Commands::cases() as $case) {
+            if (str_contains($text, $case->value)) {
                 $this->handleCommand($case, $data, $user);
             }
         }
@@ -80,7 +83,8 @@ class MessageUpdater {
         return $data;
     }
 
-    private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void {
+    private function handleCommand(Enums\Commands $case, MessageUpdate $data, User $user): void
+    {
         match ($case) {
             Enums\Commands::Start => $this->handleStart($data, $user),
             Enums\Commands::Logs  => $this->handleLogs($data, $user),
@@ -88,8 +92,9 @@ class MessageUpdater {
         };
     }
 
-    private function handleLogs(MessageUpdate $data, User $user): void {
-        if( !$user->isAdmin() ) {
+    private function handleLogs(MessageUpdate $data, User $user): void
+    {
+        if (!$user->isAdmin()) {
             $this->sendDummyMessage($user->tg_id);
             return;
         }
@@ -98,23 +103,22 @@ class MessageUpdater {
         /** @var Collection $logs */
         $logs = $logs->listLast();
 
-        if( $logs->isEmpty() ) {
+        if ($logs->isEmpty()) {
             $text = 'На данный момент логов нет';
             $message = $this->messageBuilder->buildMessage($user->tg_id, 'На данный момент логов нет');
             $this->telegramRequest->sendMessage($message);
             return;
-        }
-        else {
+        } else {
             $text = '';
 
             $length = 0;
 
             /** @var Log $log */
 
-            foreach($logs as $log) {
+            foreach ($logs as $log) {
                 $length = mb_strlen($text);
 
-                if( $length > 3500 ) {
+                if ($length > 3500) {
                     break;
                 }
 
@@ -122,11 +126,11 @@ class MessageUpdater {
 
                 $info = json_decode($info, true);
 
-                if( !isset($info['message']) ) {
+                if (!isset($info['message'])) {
                     continue;
                 }
 
-                $text .= $info['message'] . "\n";
+                $text .= $log->id . ":" . $info['message'] . ' ' . $log->created_at . "\n";
             }
         }
 
@@ -134,8 +138,9 @@ class MessageUpdater {
         $this->telegramRequest->sendMessage($message);
     }
 
-    public function handleStart(MessageUpdate $data, User $user): void {
-        if( !$user->isMember() ) {
+    public function handleStart(MessageUpdate $data, User $user): void
+    {
+        if (!$user->isMember()) {
             // Не отсылаю клавиатуру если юзера забанило
             return;
         }
@@ -149,26 +154,27 @@ class MessageUpdater {
         $buttons = [];
         $buttons[] = $this->inlineBuilder->buildUrlButton('Вступить в канал', $link);
 
-        if( $user->isAdmin() ) {
+        if ($user->isAdmin()) {
             $callbackData = new CallbackDataValues(Enums\Callback::CreatePost, 'yes');
             $buttons[] = $this->inlineBuilder->buildDataButton('Создать пост', json_encode($callbackData));
         }
 
         $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
 
-        $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);
+        $message = $this->messageBuilder->buildDocument(chat_id: $user_id, caption: $message, file_id: $file_id, keyboard: $keyboard);
 
         $this->telegramRequest->sendDocument($message);
     }
 
-    private function createNewUser(int $tg_id, bool $member, ?string $user_name = null): User {
+    private function createNewUser(int $tg_id, bool $member, ?string $user_name = null): User
+    {
         $user = new User();
         $user->user_name = $user_name;
         $user->tg_id = $tg_id;
 
         $admin = env('TG_USER');
 
-        if( $admin == $user->tg_id ) {
+        if ($admin == $user->tg_id) {
             $user->is_admin = 'yes';
         }
 
