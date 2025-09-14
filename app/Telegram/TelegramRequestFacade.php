@@ -54,6 +54,7 @@ class TelegramRequestFacade extends Builder
             $log = new Log();
             $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
             $log->save();
+            sleep(env('WRONG_ANSWER'));
         }
 
         return [];
@@ -71,6 +72,7 @@ class TelegramRequestFacade extends Builder
             $log = new Log();
             $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
             $log->save();
+            sleep(env('WRONG_ANSWER'));
         }
     }
 }

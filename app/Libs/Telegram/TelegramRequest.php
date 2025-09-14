@@ -66,6 +66,8 @@ class TelegramRequest
             curl_setopt($curl, CURLOPT_POSTFIELDS, $post_fiels);
         }
 
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
