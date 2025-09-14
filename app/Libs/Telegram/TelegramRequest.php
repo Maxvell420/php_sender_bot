@@ -75,9 +75,11 @@ class TelegramRequest
             return $decoded_response;
         } elseif (str_starts_with($httpCode, 4)) {
             throw new TelegramApiException($decoded_response['description'], $httpCode);
+        } elseif (is_bool($response)) {
+            throw new Exception('Ошибка с сетью?', $httpCode);
         } else {
             // телега неверно ответила?
-            throw new Exception($response, $httpCode);
+            throw new Exception('Какая-то вообще жесть пришла', $httpCode);
         }
     }
 }

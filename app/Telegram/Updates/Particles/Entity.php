@@ -6,14 +6,16 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
 use App\Telegram\Enums\EntityPosition;
 
-class Entity extends Data {
+class Entity extends Data
+{
 
     public bool $rare_actions = false;
 
     public function __construct(
         #[
-        Validation\Required,
-        Validation\StringType]
+            Validation\Required,
+            Validation\StringType
+        ]
         public string $type,
         public ?int $offset = null,
         public ?int $length = null,
@@ -22,21 +24,25 @@ class Entity extends Data {
         public ?int $custom_emoji_id = null
     ) {}
 
-    public function isCommand(): bool {
+    public function isCommand(): bool
+    {
         return $this->type == 'bot_command';
     }
 
-    public function getTypeTags(EntityPosition $position): string {
+    public function getTypeTags(EntityPosition $position): string
+    {
         $types = $this->getAllowedTypes();
         return $types[$this->type][$position->value];
     }
 
-    public function isAllowedType(): bool {
+    public function isAllowedType(): bool
+    {
         $types = $this->getAllowedTypes();
         return isset($types[$this->type]);
     }
 
-    private function getAllowedTypes(): array {
+    private function getAllowedTypes(): array
+    {
         return [
             'bold' => ['start' => '*', 'end' => '*'],
             'italic' => ['start' => '_', 'end' => '_'],
@@ -51,15 +57,18 @@ class Entity extends Data {
         ];
     }
 
-    private function getTextLinkTags(): array {
+    private function getTextLinkTags(): array
+    {
         return ['start' => "[", 'end' => "]($this->url)"];
     }
 
-    private function getCustomEmojiTags(): array {
+    private function getCustomEmojiTags(): array
+    {
         return ['start' => "![", 'end' => "](tg://emoji?id=$this->custom_emoji_id)"];
     }
 
-    private function getPreTags(): array {
+    private function getPreTags(): array
+    {
         return ['start' => "```{$this->language}\n", 'end' => "\n```"];
     }
 }
