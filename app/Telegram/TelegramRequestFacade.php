@@ -53,6 +53,7 @@ class TelegramRequestFacade extends Builder
         } catch (Exception $e) {
             $log = new Log();
             $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
+            $log->save();
         }
 
         return [];
@@ -69,6 +70,7 @@ class TelegramRequestFacade extends Builder
             print('Какая-то ошибка из телеги' . "\n");
             $log = new Log();
             $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
+            $log->save();
         }
     }
 }
