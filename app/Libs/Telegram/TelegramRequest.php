@@ -18,7 +18,8 @@ class TelegramRequest
     public function getUpdates(?int $offset = null, ?int $timeout = null): array
     {
         $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset, $timeout);
-        return $this->sendRequest($url);
+        $params = ['timeout' => $timeout];
+        return $this->sendRequest($url, params: $params);
     }
 
     public function sendMessage(TelegramActions $action, array $message): void
@@ -55,7 +56,8 @@ class TelegramRequest
 
     private function sendRequest(string $url, array $params = []): array
     {
-        // dd(mb_strlen($params['post_fields']['caption']));
+
+        $timeout = $params['timeout'] ?? 10 + 1;
         $method = $params['method'] ?? CURLOPT_HTTPGET;
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -66,11 +68,10 @@ class TelegramRequest
             curl_setopt($curl, CURLOPT_POSTFIELDS, $post_fiels);
         }
 
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $timeout + 1);
+        curl_setopt($curl, CURLOPT_TIMEOUT, $timeout + 1);
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
         $decoded_response = json_decode($response, true);
 
         if ($httpCode == 200) {
@@ -80,8 +81,7 @@ class TelegramRequest
         } elseif (is_bool($response)) {
             throw new Exception('Ошибка с сетью?', $httpCode);
         } else {
-            // телега неверно ответила?
-            throw new Exception('Какая-то вообще жесть пришла', $httpCode);
+            return [];
         }
     }
 }
