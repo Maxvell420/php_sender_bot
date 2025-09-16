@@ -64,6 +64,7 @@ class Updates {
             $log->info = json_encode(['message' => $e->getMessage()]);
             $log->save();
         } catch (Error $e) {
+            dd($e);
             $facade->sendErrorMessage(env('TG_USER'), 'Что-то пошло нет так');
             $log = new Log();
             $log->info = json_encode(['message' => $e->getMessage()]);

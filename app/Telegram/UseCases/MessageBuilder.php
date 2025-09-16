@@ -12,8 +12,14 @@ use App\Telegram\Enums\ {
     TelegramEntities
 };
 use App\Telegram\Exceptions\TelegramBaseException;
+use App\Telegram\ {
+    Enums,
+    Values
+};
 
 class MessageBuilder {
+
+    public function __construct(private InlineBuilder $inlineBuilder) {}
 
     public function buildMessage(int $chat_id, string $text, ?InlineKeyboard $keyboard = null, array $params = []): array {
         $data = ['chat_id' => $chat_id];
@@ -61,6 +67,17 @@ class MessageBuilder {
 
     public function buildDocument(int $chat_id, string $file_id, ?string $caption = null, ?InlineKeyboard $keyboard = null, array $params = []): array {
         $data = ['chat_id' => $chat_id, 'document' => $file_id];
+
+        if( isset($params['parse_mode']) ) {
+            $data['parse_mode'] = 'MarkdownV2';
+        }
+
+        $data = $this->handleParts($data, $keyboard, $caption);
+        return $data;
+    }
+
+    public function buildMediaGroup(int $chat_id, array $files, ?string $caption = null, ?InlineKeyboard $keyboard = null, array $params = []): array {
+        $data = ['chat_id' => $chat_id, 'media' => $files];
 
         if( isset($params['parse_mode']) ) {
             $data['parse_mode'] = 'MarkdownV2';
@@ -331,5 +348,15 @@ class MessageBuilder {
             '-' => "\\" . $letter,
             default => $letter
         };
+    }
+
+    public function buildCreatePostKeyboard(): InlineKeyboard {
+        $yesData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'yes');
+        $noData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'no');
+        $yesButton = $this->inlineBuilder->buildDataButton('Да', json_encode($yesData));
+        $noButton = $this->inlineBuilder->buildDataButton('Нет', json_encode($noData));
+        $actualData = new Values\CallbackDataValues(Enums\Callback::ActualizePost, 'yes');
+        $actualButton = $this->inlineBuilder->buildDataButton('Пост', json_encode($actualData));
+        return $this->inlineBuilder->buildKeyboard([$yesButton, $actualButton, $noButton]);
     }
 }

@@ -27,7 +27,33 @@ class CallbackQueryUpdater {
 
         match ($data->callback) {
             Enums\Callback::SendPost => $this->handleSendPost($update, $data->data),
-            Enums\Callback::CreatePost => $this->handleCreatePost($update, $data->data)
+            Enums\Callback::CreatePost => $this->handleCreatePost($update, $data->data),
+            Enums\Callback::ActualizePost => $this->handleActualizePost($update, $data->data)
+        };
+    }
+
+    private function handleActualizePost(CallbackQueryUpdate $update): void {
+        $message_id = $update->getMessageId();
+        $user_id = $update->getUserId();
+        $state = new State();
+        $existed_state = $state->findByUser($user_id);
+
+        if( !$existed_state || !$existed_state->json ) {
+            $hideKeyboardMessage = $this->messageBuilder->buildHileInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
+            $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
+            return;
+        }
+
+        $data = json_decode($existed_state->json, true);
+
+        $method = $data['method'];
+        $message = $data['update'];
+
+        match($method) {
+            TelegramActions::sendMediaGroup->value => $this->telegramRequest->sendMediaGroup($message),
+            TelegramActions::sendPhoto->value => $this->telegramRequest->sendPhoto($message),
+            TelegramActions::sendVideo->value => $this->telegramRequest->sendVideo($message),
+            TelegramActions::sendDocument->value => $this->telegramRequest->sendDocument($message)
         };
     }
 
@@ -56,6 +82,14 @@ class CallbackQueryUpdater {
         $hideKeyboardMessage = $this->messageBuilder->buildHileInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
         $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
 
+        $user_id = $update->getUserId();
+        $state = new State();
+        $existed_state = $state->findByUser($user_id);
+
+        if( $existed_state ) {
+            $existed_state->delete();
+        }
+
         if( $callback != 'yes' ) {
             return;
         }
@@ -74,11 +108,10 @@ class CallbackQueryUpdater {
         $users = $user->listActiveUsers();
         $count = 0;
 
-        foreach ($users as $user) {
-            if ($user_id == $user->tg_id) {
+        foreach($users as $user) {
+            if( $user_id == $user->tg_id ) {
                 continue;
             }
-
 
             $count++;
 

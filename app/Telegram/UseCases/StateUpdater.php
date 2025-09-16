@@ -8,9 +8,8 @@ use App\Models\State;
 use App\Telegram\ {
     Enums,
     TelegramRequestFacade,
-    Values
 };
-use App\Telegram\InlineKeyboard\InlineKeyboard;
+use App\Telegram\Exceptions\TelegramBaseException;
 
 class StateUpdater {
 
@@ -28,6 +27,10 @@ class StateUpdater {
     }
 
     private function handleCreatePost(MessageUpdate $update, State $state): bool {
+        if( $state->json ) {
+            return $this->buildMultipleFilesPost($update, $state);
+        }
+
         if( $update->hasAnimation() ) {
             $action = TelegramActions::sendAnimation;
             $text = $update->getCaption();
@@ -82,13 +85,210 @@ class StateUpdater {
             TelegramActions::sendVideo => $this->telegramRequest->sendVideo($message)
         };
 
-        $state->delete();
+        if( in_array($action, [TelegramActions::sendDocument, TelegramActions::sendPhoto, TelegramActions::sendVideo]) ) {
+            $type = match($action) {
+                TelegramActions::sendDocument => 'document',
+                TelegramActions::sendPhoto => 'photo',
+                TelegramActions::sendVideo => 'video'
+            };
+            $data = ['update' => $message, 'type' => $type, 'method' => $action->value];
+
+            $state->json = json_encode($data);
+            $state->save();
+        }
+        else {
+            $state->delete();
+        }
 
         return true;
     }
 
+    private function buildMultipleFilesPost(MessageUpdate $update, State $state): bool {
+        $json = json_decode($state->json, true);
+        $type = $json['type'];
+        $method = $json['method'];
+        $stateUpdate = $json['update'];
+
+        if( isset($stateUpdate['media']) && count($stateUpdate['media']) == 10 ) {
+            $user_id = $state->actor_id;
+            $message = $this->messageBuilder->buildMessage(
+                $user_id,
+                'Загружено максимальное количество приложений'
+            );
+            $this->telegramRequest->sendMessage($message);
+            return true;
+        }
+
+        if( $method != TelegramActions::sendMediaGroup->value ) {
+            return $this->handlePre($state, $update, $stateUpdate);
+        }
+        elseif( $update->hasDocument() || $update->hasPhoto() || $update->hasVideo() ) {
+            if( $update->hasDocument() ) {
+                if( $type != 'document' ) {
+                    throw new TelegramBaseException(
+                        'Нельзя делать массовую рассылку разных типов данных, только файлы к файлам, фотки к фоткам или к видео :)'
+                    );
+                }
+
+                $document = $update->getDocument();
+                $file = $document->file_id;
+                $file_type = 'document';
+            }
+            elseif( $update->hasPhoto() ) {
+                if( !in_array($type, ['photo', 'video']) ) {
+                    throw new TelegramBaseException(
+                        'Нельзя делать массовую рассылку разных типов данных, только файлы к файлам, фотки к фоткам или к видео :)'
+                    );
+                }
+
+                $photo = $update->getPhoto();
+                $file = array_pop($photo)['file_id'];
+                $file_type = 'photo';
+            }
+            else {
+                if( !in_array($type, ['photo', 'video']) ) {
+                    throw new TelegramBaseException(
+                        'Нельзя делать массовую рассылку разных типов данных, только файлы к файлам, фотки к фоткам или к видео :)'
+                    );
+                }
+
+                $video = $update->getVideo();
+                $file = $video->file_id;
+                $file_type = 'video';
+            }
+
+            $text = $update->getCaption();
+            $entities = $update->getCaptionEntities();
+
+            $beautiful = $entities && $text;
+
+            if( $beautiful ) {
+                $text = $this->messageBuilder->buildBeautifulMessage($text, $entities);
+            }
+
+            if( isset($state_update['parse_mode']) ) {
+                $params = ['parse_mode' => 'MarkdownV2'];
+            }
+
+            $file_data = ['media' => $file, 'type' => $file_type];
+
+            if( $text ) {
+                $file_data['caption'] = $text;
+            }
+
+            if( isset($params['parse_mode']) ) {
+                $stateUpdate['parse_mode'] = 'MarkdownV2';
+            }
+
+            $stateUpdate['media'][] = $file_data;
+            $state->json = json_encode(['update' => $stateUpdate, 'type' => $type, 'method' => $method]);
+            $state->save();
+
+            return true;
+        }
+        else {
+            $user_id = $state->actor_id;
+            $this->sendWrongInnerParticlesMessage($user_id);
+            return true;
+        }
+    }
+
+    private function sendWrongInnerParticlesMessage(int $user_id): void {
+        $message = $this->messageBuilder->buildMessage(
+            $user_id,
+            'Нельзя делать массовую рассылку разных типов данных, только файлы к файлам, фотки к фоткам или к видео :)'
+        );
+        $this->telegramRequest->sendMessage($message);
+    }
+
+    private function handlePre(State $state, MessageUpdate $update, array $state_update): bool {
+        $method = TelegramActions::sendMediaGroup->value;
+
+        if( $update->hasDocument() && isset($state_update['document']) ) {
+            $document = $update->getDocument();
+            $caption = $update->getCaption();
+            $entities = $update->getCaptionEntities();
+
+            if( !empty($entities) && $caption ) {
+                $caption = $this->messageBuilder->buildBeautifulMessage($caption, $entities);
+            }
+
+            $file = $document->file_id;
+            $type = 'document';
+
+            $file_data = ['type' => $type, 'media' => $file];
+
+            if( $caption ) {
+                $file_data['caption'] = $caption;
+            }
+
+            $old_file_data = ['type' => $type, 'media', $state_update['document']];
+
+            if( isset($state_update['caption']) ) {
+                $old_file_data['caption'] = $state_update['caption'];
+            }
+
+            $message = $this->messageBuilder->buildMediaGroup($state->actor_id, [$old_file_data, $file_data]);
+            $data = ['type' => 'document', 'update' => $message, 'method' => $method];
+            $state->json = json_encode($data);
+            $state->save();
+            return true;
+        }
+        elseif( ($update->hasPhoto() || $update->hasVideo()) && (isset($state_update['photo']) || isset($state_update['video'])) ) {
+            $entities = $update->getCaptionEntities();
+            $caption = $update->getCaption();
+
+            if( $update->hasPhoto() ) {
+                $photo = $update->getPhoto();
+                $file = array_pop($photo)['file_id'];
+                $type = 'photo';
+            }
+            else {
+                $video = $update->getVideo();
+                $file = $video->file_id;
+                $type = 'video';
+            }
+
+            $beautiful = !empty($entities) && $caption;
+
+            if( $beautiful ) {
+                $caption = $this->messageBuilder->buildBeautifulMessage($caption, $entities);
+            }
+
+            $file_data = ['type' => $type, 'media' => $file];
+
+            if( $caption ) {
+                $file_data['caption'] = $caption;
+            }
+
+            $old_file_data = ['type' => $type, 'media' => $file];
+
+            if( isset($state_update['caption']) ) {
+                $old_file_data['caption'] = $state_update['caption'];
+            }
+
+            if( isset($state_update['parse_mode']) || $beautiful ) {
+                $params = ['parse_mode' => 'MarkdownV2'];
+            }
+            else {
+                $params = [];
+            }
+
+            $message = $this->messageBuilder->buildMediaGroup($state->actor_id, [$old_file_data, $file_data], params:$params);
+
+            $data = ['type' => $type, 'update' => $message, 'method' => $method];
+            $state->json = json_encode($data);
+            $state->save();
+            return true;
+        }
+        else {
+            $this->sendWrongInnerParticlesMessage($state->actor_id);
+            return true;
+        }
+    }
+
     private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id, array $params = []): array {
-        $keyboard = $this->buildCreatePostKeyboard();
+        $keyboard = $this->messageBuilder->buildCreatePostKeyboard();
         switch($type) {
             case TelegramActions::sendVideo:
                 $video = $update->getVideo();
@@ -119,14 +319,5 @@ class StateUpdater {
         };
 
         return $message;
-    }
-
-    private function buildCreatePostKeyboard(): InlineKeyboard {
-        $yesData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'yes');
-        $noData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'no');
-        $yesButton = $this->inlineBuilder->buildDataButton('Да', json_encode($yesData));
-        $noButton = $this->inlineBuilder->buildDataButton('Нет', json_encode($noData));
-        $keyboard = $this->inlineBuilder->buildKeyboard([$yesButton, $noButton]);
-        return $keyboard;
     }
 }
