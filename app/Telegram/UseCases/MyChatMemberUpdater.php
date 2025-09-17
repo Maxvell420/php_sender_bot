@@ -20,7 +20,6 @@ class MyChatMemberUpdater {
     }
 
     private function createBotChatRole(MyChatMemberUpdate $values): void {
-
         // пока что только для бота
         if( env('TG_BOT_ID') != $values->getNewChatMemberUserId() ) {
             return;
