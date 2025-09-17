@@ -4,10 +4,20 @@ namespace App\Telegram\UseCases;
 
 use App\Telegram\Updates\MyChatMemberUpdate;
 use App\Models\User;
+use App\Telegram\Enums\ChatType;
 
 class MyChatMemberUpdater {
 
     public function handleUpdate(MyChatMemberUpdate $values): void {
+        match($values->getChatType()) {
+            ChatType::Channel => $this->createBotChatRole($values),
+            ChatType::Private => $this->createPrivateUser($values)
+        };
+    }
+
+    private function createBotChatRole(MyChatMemberUpdate $values): void {}
+
+    private function createPrivateUser(MyChatMemberUpdate $values): void {
         $user_id = $values->getUserId();
         $user = (new User)->findByTgId($user_id);
         $status = $values->isMember();
