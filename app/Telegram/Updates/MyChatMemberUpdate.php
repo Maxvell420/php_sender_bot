@@ -2,6 +2,7 @@
 
 namespace App\Telegram\Updates;
 
+use App\Telegram\Enums\ChannelUserStatus;
 use App\Telegram\Enums\ChatType;
 use App\Telegram\Enums\UpdateType;
 use Spatie\LaravelData\Data;
@@ -18,7 +19,7 @@ class MyChatMemberUpdate extends Data implements Update {
     ) {}
 
     public function isMember(): bool {
-        return in_array($this->my_chat_member->getNewStatus(), ['member', 'administrator']);
+        return in_array($this->my_chat_member->getNewStatus(), [ChannelUserStatus::Administrator, ChannelUserStatus::Member]);
     }
 
     public function getUserName(): string {
@@ -38,8 +39,20 @@ class MyChatMemberUpdate extends Data implements Update {
         return isset($from);
     }
 
+    public function getChatId(): int {
+        return $this->my_chat_member->chat->id;
+    }
+
     public function getType(): UpdateType {
         return UpdateType::MyChatMember;
+    }
+
+    public function getNewChatMemberUserId(): int {
+        return $this->my_chat_member->getNewChatMemberUserId();
+    }
+
+    public function getNewStatus(): ChannelUserStatus {
+        return $this->my_chat_member->getNewStatus();
     }
 
     public function getChatType(): ChatType {

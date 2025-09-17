@@ -2,6 +2,7 @@
 
 namespace App\Telegram\Updates\Particles;
 
+use App\Telegram\Enums\ChannelUserStatus;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\Validation;
 
@@ -11,11 +12,11 @@ class NewChatMember extends Data {
 
         #[Validation\Required,
         Validation\StringType]
-        public string $status,
+        public ChannelUserStatus $status,
         public User $user
     ) {}
 
-    public function getStatus(): string {
+    public function getStatus(): ChannelUserStatus {
         return $this->status;
     }
 }
