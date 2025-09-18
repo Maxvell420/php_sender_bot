@@ -2,14 +2,55 @@
 
 namespace App\Telegram\UseCases;
 
+use App\Models\BotChannel;
 use App\Telegram\Updates\MyChatMemberUpdate;
 use App\Models\User;
+use App\Telegram\Enums\ {
+    ChannelUserStatus,
+    ChatType
+};
 
 class MyChatMemberUpdater {
 
     public function handleUpdate(MyChatMemberUpdate $values): void {
+        match($values->getChatType()) {
+            ChatType::Channel => $this->createBotChatRole($values),
+            ChatType::Private => $this->createPrivateUser($values)
+        };
+    }
+
+    private function createBotChatRole(MyChatMemberUpdate $values): void {
+        // пока что только для бота
+        if( env('TG_BOT_ID') != $values->getNewChatMemberUserId() ) {
+            return;
+        }
+
+        $channelModel = $channel = new BotChannel();
+        $channel = $channelModel->findByChannelId($values->getChatId());
+        $status = match($values->getNewStatus()) {
+            ChannelUserStatus::Administrator => 1,
+            ChannelUserStatus::Member => 2,
+            ChannelUserStatus::Restricted => 3,
+            ChannelUserStatus::Left => 4,
+            ChannelUserStatus::Kicked => 5
+        };
+
+        if( !$channel ) {
+            $channelModel->channel_id = $values->getChatId();
+            $channelModel->status = $status;
+            $channelModel->tg_id = $values->getUserId();
+
+            $channelModel->save();
+        }
+        else {
+            $channel->status = $status;
+            $channel->save();
+        }
+    }
+
+    private function createPrivateUser(MyChatMemberUpdate $values): void {
         $user_id = $values->getUserId();
-        $user = (new User)->findByTgId($user_id);
+        $user = new User()->findByTgId($user_id);
         $status = $values->isMember();
 
         if( !$user ) {

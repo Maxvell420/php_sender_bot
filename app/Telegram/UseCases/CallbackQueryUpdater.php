@@ -10,7 +10,6 @@ use App\Models\ {
     JobUser
 };
 use App\Telegram\Enums;
-use App\Telegram\InlineKeyboard\InlineKeyboard;
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Updates\CallbackQueryUpdate;
 
@@ -24,47 +23,111 @@ class CallbackQueryUpdater {
 
     public function handleUpdate($update): void {
         $data = $update->getData();
-
         match ($data->callback) {
             Enums\Callback::SendPost => $this->handleSendPost($update, $data->data),
-            Enums\Callback::CreatePost => $this->handleCreatePost($update, $data->data)
+            Enums\Callback::CreatePost => $this->handleCreatePost($update, $data->data),
+            Enums\Callback::CheckPost => $this->handleCheckPost($update, $data->data)
         };
     }
 
-    // пока что всегда работает без callBack
+    private function handleCheckPost(CallbackQueryUpdate $update, string $callback): void {
+        $user_id = $update->getUserId();
+        $state = new State();
+        $existed_state = $state->findByUser($user_id);
+        $message_id = $update->getMessageId();
+
+        if( !$existed_state ) {
+            $hideKeyboardMessage = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
+            $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
+            return;
+        }
+
+        $json = json_decode($existed_state->json, true);
+
+        if( !$json ) {
+            $message = $this->messageBuilder->buildMessage($user_id, 'Еще нет никакого сообщения для проверки');
+            $this->telegramRequest->sendMessage($message);
+            return;
+        }
+
+        match($json['method']) {
+            TelegramActions::sendMessage->value => $this->telegramRequest->sendMessage($json['data']),
+            TelegramActions::sendDocument->value => $this->telegramRequest->sendDocument($json['data']),
+            TelegramActions::sendPhoto->value => $this->telegramRequest->sendPhoto($json['data']),
+            TelegramActions::copyMessage->value => $this->telegramRequest->copyMessage($json['data']),
+            TelegramActions::sendVideo->value => $this->telegramRequest->sendVideo($json['data']),
+            TelegramActions::sendAnimation->value => $this->telegramRequest->sendAnimation($json['data']),
+            TelegramActions::copyMessages->value => $this->telegramRequest->copyMessages($json['data'])
+        };
+    }
+
     private function handleCreatePost(CallbackQueryUpdate $update, string $callback): void {
         $user_id = $update->getUserId();
         $state = new State();
         $existed_state = $state->findByUser($user_id);
+        $message_id = $update->getMessageId();
 
         if( $existed_state ) {
             $message = $this->messageBuilder->buildMessage($user_id, 'Уже жду пост для отправки');
+            $this->telegramRequest->sendMessage($message);
+            // Обновить тут клавиатуру
         }
         else {
             $message = $this->messageBuilder->buildMessage($user_id, 'Жду пост для отправки');
             $state->actor_id = $user_id;
             $state->state_id = Enums\States::Create_post->value;
             $state->save();
+            $keyboard = $this->inlineBuilder->buildCreatePostKeyboard();
+            $message = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $keyboard);
+            $this->telegramRequest->sendEditMessageReplyMarkup($message);
         }
-
-        $this->telegramRequest->sendMessage($message);
     }
 
     private function handleSendPost(CallbackQueryUpdate $update, string $callback): void {
         $message_id = $update->getMessageId();
         $user_id = $update->getUserId();
-        $hideKeyboardMessage = $this->messageBuilder->buildHileInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
-        $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
 
-        if( $callback != 'yes' ) {
+        $state = new State()->findByUser($user_id);
+        $hideKeyboardMessage = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
+
+        if( !$state ) {
+            $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
             return;
         }
 
-        $message_id = $update->getMessageId();
-        $message = $this->messageBuilder->buildCopyMessage($user_id, $user_id, $message_id);
+        if( $callback != 'yes' ) {
+            $state->delete();
+            $hideKeyboardMessage = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
+            $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
+            return;
+        }
+
+        $json = json_decode($state->json, true);
+
+        if( !$json ) {
+            $message = $this->messageBuilder->buildMessage($user_id, 'Нету сообщения для отправки');
+            $this->telegramRequest->sendMessage($message);
+            return;
+        }
+
+        $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
+        [$message, $action] = match ($json['method']) {
+            TelegramActions::copyMessage->value => [
+                $this->messageBuilder->buildCopyMessage($user_id, $user_id, $json['data']['message_id']),
+                TelegramActions::copyMessage
+            ],
+            TelegramActions::copyMessages->value => [
+                $this->messageBuilder->buildCopyMessages($user_id, $user_id, $json['data']['message_ids']),
+                TelegramActions::copyMessages
+            ],
+            default => [
+                $json['data'],
+                TelegramActions::tryFrom($json['method'])
+            ]
+        };
 
         $job = new Job();
-        $job->json = json_encode(['message' => $message, 'action' => TelegramActions::copyMessage->value]);
+        $job->json = json_encode(['message' => $message, 'action' => $action]);
 
         $job->actor_id = $user_id;
         $job->job_type = Enums\JobTypes::Create_post->value;
@@ -74,11 +137,10 @@ class CallbackQueryUpdater {
         $users = $user->listActiveUsers();
         $count = 0;
 
-        foreach ($users as $user) {
-            if ($user_id == $user->tg_id) {
+        foreach($users as $user) {
+            if( $user_id == $user->tg_id ) {
                 continue;
             }
-
 
             $count++;
 
@@ -91,32 +153,5 @@ class CallbackQueryUpdater {
 
         $message = $this->messageBuilder->buildMessage($user_id, "Пост в скором времени будет разослан $count пользователям");
         $this->telegramRequest->sendMessage($message);
-    }
-
-    private function buildPostMessage(
-        TelegramActions $type,
-        CallbackQueryUpdate $update,
-        string $message,
-        int $user_id,
-        array $params = [],
-        ?InlineKeyboard $keyboard = null
-    ): array {
-        switch($type) {
-            case TelegramActions::sendPhoto:
-                $photo = $update->getPhoto();
-                $file = array_pop($photo);
-                $message = $this->messageBuilder->buildPhoto(chat_id:$user_id, caption:$message, file_id:$file['file_id'], keyboard:$keyboard, params:$params);
-                break;
-
-            case TelegramActions::sendDocument:
-                $document = $update->getDocument();
-                $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$document->file_id, keyboard:$keyboard, params:$params);
-                break;
-
-            default:
-                $message = $this->messageBuilder->buildMessage(chat_id:$user_id, text:$message, keyboard:$keyboard, params:$params);
-                break;
-        };
-        return $message;
     }
 }

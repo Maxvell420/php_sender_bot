@@ -8,9 +8,7 @@ use App\Models\State;
 use App\Telegram\ {
     Enums,
     TelegramRequestFacade,
-    Values
 };
-use App\Telegram\InlineKeyboard\InlineKeyboard;
 
 class StateUpdater {
 
@@ -73,60 +71,42 @@ class StateUpdater {
         }
 
         $message = $this->buildPostMessage($action, $update, $text, $user_id, $params);
-
-        match ($action) {
-            TelegramActions::sendDocument => $this->telegramRequest->sendDocument($message),
-            TelegramActions::sendMessage => $this->telegramRequest->sendMessage($message),
-            TelegramActions::sendPhoto => $this->telegramRequest->sendPhoto($message),
-            TelegramActions::sendAnimation => $this->telegramRequest->sendAnimation($message),
-            TelegramActions::sendVideo => $this->telegramRequest->sendVideo($message)
-        };
-
-        $state->delete();
-
+        $data = ['method' => $action->value, 'data' => $message];
+        $state->json = json_encode($data);
+        $state->save();
         return true;
     }
 
     private function buildPostMessage(TelegramActions $type, MessageUpdate $update, string $message, int $user_id, array $params = []): array {
-        $keyboard = $this->buildCreatePostKeyboard();
         switch($type) {
             case TelegramActions::sendVideo:
                 $video = $update->getVideo();
                 $file = $video->file_id;
-                $message = $this->messageBuilder->buildVideo(chat_id:$user_id, caption:$message, file_id:$file, keyboard:$keyboard, params:$params);
+                $message = $this->messageBuilder->buildVideo(chat_id:$user_id, caption:$message, file_id:$file, params:$params);
                 break;
 
             case TelegramActions::sendPhoto:
                 $photo = $update->getPhoto();
                 $file = array_pop($photo);
-                $message = $this->messageBuilder->buildPhoto(chat_id:$user_id, caption:$message, file_id:$file['file_id'], keyboard:$keyboard, params:$params);
+                $message = $this->messageBuilder->buildPhoto(chat_id:$user_id, caption:$message, file_id:$file['file_id'], params:$params);
                 break;
 
             case TelegramActions::sendDocument:
                 $document = $update->getDocument();
-                $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$document->file_id, keyboard:$keyboard, params:$params);
+                $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$document->file_id, params:$params);
                 break;
 
             case TelegramActions::sendAnimation:
                 $animation = $update->getAnimation();
                 $file = $animation->file_id;
-                $message = $this->messageBuilder->buildAnimation($user_id, $animation->file_id, $message, $keyboard, $params);
+                $message = $this->messageBuilder->buildAnimation($user_id, $animation->file_id, $message, params:$params);
                 break;
 
             default:
-                $message = $this->messageBuilder->buildMessage(chat_id:$user_id, text:$message, keyboard:$keyboard, params:$params);
+                $message = $this->messageBuilder->buildMessage(chat_id:$user_id, text:$message, params:$params);
                 break;
         };
 
         return $message;
-    }
-
-    private function buildCreatePostKeyboard(): InlineKeyboard {
-        $yesData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'yes');
-        $noData = new Values\CallbackDataValues(Enums\Callback::SendPost, 'no');
-        $yesButton = $this->inlineBuilder->buildDataButton('Да', json_encode($yesData));
-        $noButton = $this->inlineBuilder->buildDataButton('Нет', json_encode($noData));
-        $keyboard = $this->inlineBuilder->buildKeyboard([$yesButton, $noButton]);
-        return $keyboard;
     }
 }

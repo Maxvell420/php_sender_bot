@@ -11,4 +11,5 @@ enum TelegramActions: string {
     case copyMessage = 'copyMessage';
     case sendVideo = 'sendVideo';
     case sendAnimation = 'sendAnimation';
+    case copyMessages = 'copyMessages';
 }
