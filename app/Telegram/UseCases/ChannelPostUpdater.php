@@ -12,6 +12,8 @@ use App\Telegram\Updates\ChannelPostUpdate;
 
 class ChannelPostUpdater {
 
+    public function __construct(private MessageBuilder $messageBuilder) {}
+
     public function handleUpdate(ChannelPostUpdate $update): void {
         $channel_id = $update->getChatId();
         $bot_channel = new BotChannel()->findByChannelId($channel_id);
@@ -46,17 +48,24 @@ class ChannelPostUpdater {
             }
 
             if( $media_group != $update->getMediaGroup() ) {
+                $media_group = $update->getMediaGroup();
                 $message_ids = [$update->getMessageId()];
             }
             else {
-                $message_ids = $json['data']['message_ids'] ?? [];
+                if( isset($json['data']['message_ids']) ) {
+                    $message_ids = json_decode($json['data']['message_ids'], true);
+                }
+                else {
+                    $message_ids = [];
+                }
+
                 $message_ids[] = $update->getMessageId();
             }
 
             $new_json = [
                 'method' => TelegramActions::copyMessages->value,
                 'media_group_id' => $media_group,
-                'data' => ['message_ids' => implode(',', $message_ids), 'from_chat_id' => $channel_id, 'chat_id' => $state->actor_id]
+                'data' => $this->messageBuilder->buildCopyMessages($state->actor_id, $channel_id, $message_ids)
             ];
 
             $state->json = $new_json;
@@ -65,7 +74,7 @@ class ChannelPostUpdater {
         else {
             $state->json = [
                 'method' => TelegramActions::copyMessage->value,
-                'data' => ['message_id' => $update->getMessageId(), 'from_chat_id' => $channel_id, 'chat_id' => $state->actor_id]
+                'data' => $this->messageBuilder->buildCopyMessage($state->actor_id, $channel_id, $update->getMessageId())
             ];
             $state->save();
         }

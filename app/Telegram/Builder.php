@@ -45,7 +45,7 @@ class Builder {
     }
 
     protected function buildChannelPostUpdater(): ChannelPostUpdater {
-        return new ChannelPostUpdater();
+        return new ChannelPostUpdater(messageBuilder:$this->buildMessageBuilder());
     }
 
     protected function buildMessageUpdater(): MessageUpdater {

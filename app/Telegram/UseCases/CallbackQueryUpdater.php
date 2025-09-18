@@ -88,9 +88,9 @@ class CallbackQueryUpdater {
         $user_id = $update->getUserId();
 
         $state = new State()->findByUser($user_id);
+        $hideKeyboardMessage = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
 
         if( !$state ) {
-            $hideKeyboardMessage = $this->messageBuilder->buildHideInlineKeyboard($message_id, $user_id, $this->inlineBuilder->buildKeyboard([]));
             $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
             return;
         }
@@ -104,12 +104,13 @@ class CallbackQueryUpdater {
 
         $json = json_decode($state->json, true);
 
-        if( $json ) {
+        if( !$json ) {
             $message = $this->messageBuilder->buildMessage($user_id, 'Нету сообщения для отправки');
             $this->telegramRequest->sendMessage($message);
             return;
         }
 
+        $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
         [$message, $action] = match ($json['method']) {
             TelegramActions::copyMessage->value => [
                 $this->messageBuilder->buildCopyMessage($user_id, $user_id, $json['data']['message_id']),

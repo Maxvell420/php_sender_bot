@@ -214,7 +214,7 @@ class MessageBuilder {
     }
 
     public function buildCopyMessages(int $chat_id, int $from_chat_id, array $messages): array {
-        return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_ids' => $messages];
+        return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_ids' => json_encode($messages)];
     }
 
     public function buildBeautifulMessage(string $message, DataCollection $entities): string {
