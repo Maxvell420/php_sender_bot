@@ -113,11 +113,11 @@ class CallbackQueryUpdater {
         $this->telegramRequest->sendEditMessageReplyMarkup($hideKeyboardMessage);
         [$message, $action] = match ($json['method']) {
             TelegramActions::copyMessage->value => [
-                $this->messageBuilder->buildCopyMessage($user_id, $user_id, $json['data']['message_id']),
+                $json['data'],
                 TelegramActions::copyMessage
             ],
             TelegramActions::copyMessages->value => [
-                $this->messageBuilder->buildCopyMessages($user_id, $user_id, $json['data']['message_ids']),
+                $json['data'],
                 TelegramActions::copyMessages
             ],
             default => [
@@ -150,6 +150,8 @@ class CallbackQueryUpdater {
 
             $userJob->save();
         }
+
+        $state->delete();
 
         $message = $this->messageBuilder->buildMessage($user_id, "Пост в скором времени будет разослан $count пользователям");
         $this->telegramRequest->sendMessage($message);
