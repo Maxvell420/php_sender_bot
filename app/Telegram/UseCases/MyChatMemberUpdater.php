@@ -26,7 +26,7 @@ class MyChatMemberUpdater {
         }
 
         $channelModel = $channel = new BotChannel();
-        $channel = $channelModel->findByChatId($values->getChatId());
+        $channel = $channelModel->findByChannelId($values->getChatId());
         $status = match($values->getNewStatus()) {
             ChannelUserStatus::Administrator => 1,
             ChannelUserStatus::Member => 2,
@@ -38,6 +38,8 @@ class MyChatMemberUpdater {
         if( !$channel ) {
             $channelModel->channel_id = $values->getChatId();
             $channelModel->status = $status;
+            $channelModel->tg_id = $values->getUserId();
+
             $channelModel->save();
         }
         else {

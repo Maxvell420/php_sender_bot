@@ -26,7 +26,7 @@ class MessageBuilder {
         return $data;
     }
 
-    public function buildHileInlineKeyboard(int $message_id, int $user_id, InlineKeyboard $keyboard, array $params = []): array {
+    public function buildHideInlineKeyboard(int $message_id, int $user_id, InlineKeyboard $keyboard, array $params = []): array {
         $data = ['message_id' => $message_id, 'chat_id' => $user_id];
 
         if( isset($params['parse_mode']) ) {
@@ -211,6 +211,10 @@ class MessageBuilder {
 
     public function buildCopyMessage(int $chat_id, int $from_chat_id, int $message_id): array {
         return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_id' => $message_id];
+    }
+
+    public function buildCopyMessages(int $chat_id, int $from_chat_id, array $messages): array {
+        return ['chat_id' => $chat_id, 'from_chat_id' => $from_chat_id, 'message_ids' => $messages];
     }
 
     public function buildBeautifulMessage(string $message, DataCollection $entities): string {

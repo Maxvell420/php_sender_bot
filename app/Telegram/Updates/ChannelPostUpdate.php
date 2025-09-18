@@ -28,4 +28,20 @@ class ChannelPostUpdate extends Data implements Update {
     public function getType(): UpdateType {
         return UpdateType::ChannelPost;
     }
+
+    public function getChatId(): int {
+        return $this->channel_post->sender_chat->id;
+    }
+
+    public function hasMediaGroup(): bool {
+        return (bool) $this->channel_post->media_group_id;
+    }
+
+    public function getMediaGroup(): int {
+        return $this->channel_post->media_group_id;
+    }
+
+    public function getMessageId(): int {
+        return $this->channel_post->message_id;
+    }
 }

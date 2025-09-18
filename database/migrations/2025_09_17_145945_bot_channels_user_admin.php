@@ -11,9 +11,9 @@ return new class extends Migration {
      */
     public function up(): void {
         Schema::table(
-            'users',
+            'bot_channels',
             function (Blueprint $table) {
-                $table->enum('is_admin', ['yes', 'no'])->default('no');
+                $table->unsignedBigInteger('tg_id');
             }
 
         );
@@ -24,9 +24,9 @@ return new class extends Migration {
      */
     public function down(): void {
         Schema::table(
-            'users',
+            'bot_channels',
             function (Blueprint $table) {
-                $table->dropColumn(['is_admin']);
+                $table->dropColumn(['bot_channels']);
             }
         );
     }

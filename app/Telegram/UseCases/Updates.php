@@ -13,6 +13,7 @@ use App\Models\ {
 };
 use App\Telegram\Updates\ {
     CallbackQueryUpdate,
+    ChannelPostUpdate,
     MyChatMemberUpdate,
     MessageUpdate
 };
@@ -34,7 +35,8 @@ class Updates {
                 $update = match ($case) {
                     Enums\UpdateType::MyChatMember => $this->buildVO(MyChatMemberUpdate::class, $data),
                     Enums\UpdateType::Message => $this->buildVO(MessageUpdate::class, $data),
-                    Enums\UpdateType::CallbackQuery => $this->buildVO(CallbackQueryUpdate::class, $data)
+                    Enums\UpdateType::CallbackQuery => $this->buildVO(CallbackQueryUpdate::class, $data),
+                    Enums\UpdateType::ChannelPost => $this->buildVO(ChannelPostUpdate::class, $data)
                 };
 
                 $this->processUpdate($update);
@@ -53,7 +55,8 @@ class Updates {
             match ($update->getType()) {
                 Enums\UpdateType::MyChatMember => $facade->handleNewChatmember($update),
                 Enums\UpdateType::Message => $facade->handleMessage($update),
-                Enums\UpdateType::CallbackQuery => $facade->handleCallback($update)
+                Enums\UpdateType::CallbackQuery => $facade->handleCallback($update),
+                ENums\UpdateType::ChannelPost => $facade->handleChannelPost($update)
             };
         } catch (TelegramBaseException $e) {
             if( $update->getUserId() ) {

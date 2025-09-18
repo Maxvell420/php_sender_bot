@@ -9,6 +9,7 @@ class ChannelPost extends Data {
     public function __construct(
         public int $message_id,
         public SenderChat $sender_chat,
-        public Chat $chat
+        public Chat $chat,
+        public ?int $media_group_id
     ) {}
 }
