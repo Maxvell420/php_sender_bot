@@ -162,6 +162,9 @@ class MessageUpdater {
                 $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
             }
         }
+        else {
+            $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
+        }
 
         $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$file_id, keyboard:$keyboard);
 
