@@ -5,7 +5,8 @@ namespace App\Console\Commands;
 use App\Telegram\Demon;
 use Illuminate\Console\Command;
 
-class RunDemon extends Command {
+class RunDemon extends Command
+{
 
     /**
      * The name and signature of the console command.
@@ -24,7 +25,8 @@ class RunDemon extends Command {
     /**
      * Execute the console command.
      */
-    public function handle() {
+    public function handle()
+    {
         $demon = new Demon();
         $demon->run();
     }
