@@ -5,17 +5,23 @@ namespace App\Telegram\UseCases;
 use App\Libs\Telegram\TelegramActions;
 use App\Models\ {
     Log,
-    User
 };
+use App\Repositories\ {
+    LogRepository,
+    UserRepository
+};
+
 
 // Обработка различных ошибок при отправки сообщений в телеграм
 class TelegramWrongMessagesHandler {
+
+    public function __construct(private UserRepository $userRepository, private LogRepository $logRepository) {}
 
     private const string WRONG_REPLY_MARKUP = "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message";
 
     public function handleTelegramRequest(TelegramActions $action, array $data, int $status, string $error_message): void {
         if( $status == 403 && isset($data['chat_id']) ) {
-            $user = new User()->findByTgId($data['chat_id']);
+            $user = $this->userRepository->findByTgId($data['chat_id']);
 
             if( $user ) {
                 $user->setKicked();
@@ -48,6 +54,6 @@ class TelegramWrongMessagesHandler {
     private function logError(string $message): void {
         $log = new Log();
         $log->info = $message;
-        $log->save();
+        $this->logRepository->persist($log);
     }
 }

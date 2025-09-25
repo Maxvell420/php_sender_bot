@@ -9,6 +9,7 @@ use App\Models\ {
     Job,
     JobUser
 };
+use App\Repositories\UserRepository;
 use App\Telegram\Enums;
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Updates\CallbackQueryUpdate;
@@ -19,6 +20,7 @@ class CallbackQueryUpdater {
         private TelegramRequestFacade $telegramRequest,
         private InlineBuilder $inlineBuilder,
         private MessageBuilder $messageBuilder,
+        private UserRepository $userRepository
     ) {}
 
     public function handleUpdate($update): void {
@@ -133,8 +135,7 @@ class CallbackQueryUpdater {
         $job->job_type = Enums\JobTypes::Create_post->value;
         $job->save();
 
-        $user = new User;
-        $users = $user->listActiveUsers();
+        $users = $this->userRepository->listActiveUsers();
         $count = 0;
 
         foreach($users as $user) {

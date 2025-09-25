@@ -3,7 +3,7 @@
 namespace App\Telegram;
 
 use App\Libs\Telegram\TelegramRequest;
-use App\Models\{
+use App\Models\ {
     Update,
     Job
 };
@@ -11,47 +11,47 @@ use App\Telegram\UseCases\Updates;
 use Exception;
 use App\Telegram\UseCases\JobsHandler;
 
-class Demon
-{
+class Demon {
 
-    public function run(): void
-    {
+    public function run(): void {
         $secret = env('TG_BOT_SECRET');
         $telegram = new TelegramRequest($secret);
 
         $useCase = new Updates($telegram);
 
-        while (true) {
+        // Вообще вытащить это все из демона в класс Updates и нынче все эти принты не нужны
+        while( true ) {
             $update = new Update();
             $update_id = $update->getNextUpdateId();
             print('ID обновления: ' . $update_id . "\n");
             $job = new Job();
             $job = $job->findFirstNotCompleted();
 
-            if ($job) {
+            if( $job ) {
                 print("Выполняю работу $job->id" . "\n");
                 $useCase->handleJob($job);
                 print("Выполнил работу $job->id" . "\n");
-            } else {
+            }
+            else {
                 print('работ нет' . "\n");
             }
 
             $updates = $useCase->getUpdates($update_id, 10);
 
-            if (empty($updates)) {
+            if( empty($updates) ) {
                 print('Какая-то ошибка из телеги' . "\n");
                 sleep(env('WRONG_ANSWER'));
                 continue;
             }
 
-            if (empty($updates['result'])) {
+            if( empty($updates['result']) ) {
                 print('обновлений нет' . "\n");
                 continue;
             }
 
             print('обновления есть' . "\n");
 
-            foreach ($updates['result'] as $update) {
+            foreach($updates['result'] as $update) {
                 $useCase->handleUpdate($update);
             }
         }
