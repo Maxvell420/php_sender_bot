@@ -3,6 +3,7 @@
 namespace App\Telegram;
 
 use App\Libs\Infra\Context;
+use App\Libs\Telegram\TelegramRequest;
 use App\Repositories\ {
     BotChannelRepository,
     JobRepository,
@@ -27,7 +28,10 @@ use App\Telegram\UseCases\ {
 
 class Builder {
 
-    public function __construct(protected Context $cntx) {}
+    protected(set) TelegramRequest $telegramRequest;
+    public function __construct(protected Context $cntx) {
+        $this->telegramRequest = $cntx->telegramRequest;
+    }
 
     protected function buildCallbackQueryUpdater(): CallbackQueryUpdater {
         return new CallbackQueryUpdater(

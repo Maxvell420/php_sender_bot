@@ -2,7 +2,11 @@
 
 namespace App\Telegram;
 
-use App\Models\Job;
+use App\Models\ {
+    Job,
+    Update
+};
+
 use App\Telegram\Updates\ {
     CallbackQueryUpdate,
     ChannelPostUpdate,
@@ -20,6 +24,21 @@ class TelegramUpdatesFacade extends Builder {
     public function handleCallback(CallbackQueryUpdate $update): void {
         $useCase = $this->buildCallbackQueryUpdater();
         $useCase->handleUpdate($update);
+    }
+
+    public function getNextUpdateId(): int {
+        $repo = $this->buildUpdateRepository();
+        return $repo->getNextUpdateId();
+    }
+
+    public function findFirstJobNotCompleted(): ?Job {
+        $repo = $this->buildJobRepository();
+        return $repo->findFirstNotCompleted();
+    }
+
+    public function persistUpdate(Update $update): void {
+        $repo = $this->buildUpdateRepository();
+        $repo->persist($update);
     }
 
     public function handleChannelPost(ChannelPostUpdate $update): void {

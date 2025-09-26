@@ -2,9 +2,13 @@
 
 namespace App\Telegram\UseCases;
 
-use App\Libs\Telegram\TelegramApiException;
+use App\Libs\Telegram\ {
+    TelegramApiException,
+    TelegramRequest
+};
 use App\Telegram\ {
     Enums,
+    TelegramRequestFacade,
     TelegramUpdatesFacade
 };
 use App\Models\ {
@@ -18,9 +22,10 @@ use App\Telegram\Updates\ {
     MessageUpdate
 };
 use App\Telegram\Updates\Update as UpdateInterface;
-use App\Libs\Telegram\TelegramRequest;
-use App\Repositories\JobRepository;
-use App\Repositories\UpdateRepository;
+use App\Repositories\ {
+    JobRepository,
+    UpdateRepository
+};
 use App\Telegram\Exceptions\TelegramBaseException;
 use Error;
 
@@ -28,21 +33,24 @@ use Error;
 class Updates {
 
     public function __construct(
-        private TelegramRequest $telegramRequest,
-        private UpdateRepository $updateRepository,
-        private JobRepository $jobRepository
+        private TelegramUpdatesFacade $telegramFacade,
+        private TelegramRequestFacade $telegramRequestFacade
     ) {}
 
     public function work(): void {
         while( true ) {
-            $update_id = $this->updateRepository->getNextUpdateId();
-            $job = $this->jobRepository->findFirstNotCompleted();
+            $job = $this->telegramFacade->findFirstJobNotCompleted();
 
             if( $job ) {
                 $this->handleJob($job);
             }
 
+            $update_id = $this->telegramFacade->getNextUpdateId();
             $updates = $this->getUpdates($update_id, 10);
+
+            if( empty($update) || empty($update['result']) ) {
+                continue;
+            }
 
             foreach($updates['result'] as $update) {
                 $this->handleUpdate($update);
@@ -72,14 +80,12 @@ class Updates {
     }
 
     private function processUpdate(UpdateInterface $update) {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-
         try {
             match ($update->getType()) {
-                Enums\UpdateType::MyChatMember => $facade->handleNewChatmember($update),
-                Enums\UpdateType::Message => $facade->handleMessage($update),
-                Enums\UpdateType::CallbackQuery => $facade->handleCallback($update),
-                ENums\UpdateType::ChannelPost => $facade->handleChannelPost($update)
+                Enums\UpdateType::MyChatMember => $this->telegramFacade->handleNewChatmember($update),
+                Enums\UpdateType::Message => $this->telegramFacade->handleMessage($update),
+                Enums\UpdateType::CallbackQuery => $this->telegramFacade->handleCallback($update),
+                ENums\UpdateType::ChannelPost => $this->telegramFacade->handleChannelPost($update)
             };
         } catch (TelegramBaseException $e) {
 
@@ -91,7 +97,7 @@ class Updates {
     private function saveUpdate(int $update_id) {
         $update = new Update;
         $update->update_id = $update_id;
-        $this->updateRepository->persist($update);
+        $this->telegramFacade->persistUpdate($update);
     }
 
     private function buildVO(string $class, array $data): UpdateInterface {
@@ -99,12 +105,10 @@ class Updates {
     }
 
     private function handleJob(Job $job): void {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-        $facade->handleJob($job);
+        $this->telegramFacade->handleJob($job);
     }
 
     private function getUpdates(int $update_id, int $timeout): array {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-        return $facade->getUpdates($update_id, $timeout);
+        return $this->telegramRequestFacade->getUpdates($update_id, $timeout);
     }
 }
