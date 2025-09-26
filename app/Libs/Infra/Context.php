@@ -2,6 +2,7 @@
 
 namespace App\Libs\Infra;
 
+use App\Libs\Telegram\TelegramRequest;
 use App\Models\ {
     Job,
     BotChannel,
@@ -15,6 +16,12 @@ use App\Models\ {
 use Illuminate\Database\Eloquent\Model;
 
 class Context {
+
+    protected(set) TelegramRequest $telegramRequest;
+
+    public function __construct() {
+        $this->telegramRequest = new TelegramRequest(env('TG_BOT_SECRET'));
+    }
 
     public function getModel(string $model_table): Model {
         return $this->getModels()[$model_table];

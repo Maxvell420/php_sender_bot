@@ -29,6 +29,8 @@ class Updates {
 
     public function __construct(private TelegramRequest $telegramRequest) {}
 
+    public function work(): void {}
+
     public function handleUpdate(array $data): void {
         foreach(Enums\UpdateType::cases() as $case) {
             if( isset($data[$case->value]) ) {

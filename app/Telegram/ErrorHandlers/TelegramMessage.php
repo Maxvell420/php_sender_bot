@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Telegram\UseCases;
+namespace App\Telegram\ErrorHandlers;
 
 use App\Libs\Telegram\TelegramActions;
 use App\Models\ {
@@ -11,9 +11,7 @@ use App\Repositories\ {
     UserRepository
 };
 
-
-// Обработка различных ошибок при отправки сообщений в телеграм
-class TelegramWrongMessagesHandler {
+class TelegramMessage {
 
     public function __construct(private UserRepository $userRepository, private LogRepository $logRepository) {}
 

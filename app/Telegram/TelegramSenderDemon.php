@@ -2,6 +2,7 @@
 
 namespace App\Telegram;
 
+use App\Libs\Infra\InnerDemon;
 use App\Libs\Telegram\TelegramRequest;
 use App\Models\ {
     Update,
@@ -11,7 +12,7 @@ use App\Telegram\UseCases\Updates;
 use Exception;
 use App\Telegram\UseCases\JobsHandler;
 
-class Demon {
+class TelegramSenderDemon extends InnerDemon {
 
     public function run(): void {
         $secret = env('TG_BOT_SECRET');
@@ -45,7 +46,6 @@ class Demon {
             }
 
             if( empty($updates['result']) ) {
-                print('обновлений нет' . "\n");
                 continue;
             }
 
@@ -56,4 +56,6 @@ class Demon {
             }
         }
     }
+
+    protected function handleFallback(): void {}
 }

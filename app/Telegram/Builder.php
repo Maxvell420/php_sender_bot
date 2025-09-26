@@ -2,7 +2,18 @@
 
 namespace App\Telegram;
 
+use App\Libs\Infra\Context;
 use App\Libs\Telegram\TelegramRequest;
+use App\Repositories\ {
+    BotChannelRepository,
+    JobRepository,
+    JobUserRepository,
+    LogRepository,
+    PostRepository,
+    StateRepository,
+    UpdateRepository,
+    UserRepository
+};
 use App\Telegram\UseCases\ {
     CallbackQueryUpdater,
     ChannelPostUpdater,
@@ -18,13 +29,14 @@ use App\Telegram\UseCases\ {
 
 class Builder {
 
-    public function __construct(protected TelegramRequest $telegramRequest) {}
+    public function __construct(protected Context $cntx) {}
 
     protected function buildCallbackQueryUpdater(): CallbackQueryUpdater {
         return new CallbackQueryUpdater(
             telegramRequest:$this->buildTelegramRequestFacade(),
             inlineBuilder:$this->buildInlineBuilder(),
-            messageBuilder:$this->buildMessageBuilder()
+            messageBuilder:$this->buildMessageBuilder(),
+            userRepository:
         );
     }
 
@@ -33,7 +45,7 @@ class Builder {
     }
 
     protected function buildTelegramRequestFacade(): TelegramRequestFacade {
-        return new TelegramRequestFacade($this->telegramRequest);
+        return new TelegramRequestFacade($this->cntx->telegramRequest);
     }
 
     protected function buildJobsHandler(): JobsHandler {
@@ -71,6 +83,38 @@ class Builder {
 
     protected function buildUpdates(): Updates {
         return new Updates($this->telegramRequest);
+    }
+
+    protected function buildUserRepository(): UserRepository {
+        return new UserRepository($this->cntx);
+    }
+
+    protected function buildBotChannelRepository(): BotChannelRepository {
+        return new BotChannelRepository($this->cntx);
+    }
+
+    protected function buildJobUserRepository(): JobUserRepository {
+        return new JobUserRepository($this->cntx);
+    }
+
+    protected function buildJobRepository(): JobRepository {
+        return new JobRepository($this->cntx);
+    }
+
+    protected function buildLogRepository(): LogRepository {
+        return new LogRepository($this->cntx);
+    }
+
+    protected function buildPostRepository(): PostRepository {
+        return new PostRepository($this->cntx);
+    }
+
+    protected function buildStateRepository(): StateRepository {
+        return new StateRepository($this->cntx);
+    }
+
+    protected function buildUpdateRepository(): UpdateRepository {
+        return new UpdateRepository($this->cntx);
     }
 
     protected function buildTelegramWrongMessageHandler(): TelegramWrongMessagesHandler {
