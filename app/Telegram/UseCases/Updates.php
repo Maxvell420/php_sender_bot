@@ -4,7 +4,6 @@ namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\ {
     TelegramApiException,
-    TelegramRequest
 };
 use App\Telegram\ {
     Enums,
@@ -15,6 +14,7 @@ use App\Models\ {
     Job,
     Update
 };
+
 use App\Telegram\Updates\ {
     CallbackQueryUpdate,
     ChannelPostUpdate,
@@ -22,10 +22,6 @@ use App\Telegram\Updates\ {
     MessageUpdate
 };
 use App\Telegram\Updates\Update as UpdateInterface;
-use App\Repositories\ {
-    JobRepository,
-    UpdateRepository
-};
 use App\Telegram\Exceptions\TelegramBaseException;
 use Error;
 
@@ -42,11 +38,12 @@ class Updates {
             $job = $this->telegramFacade->findFirstJobNotCompleted();
 
             if( $job ) {
-                $this->handleJob($job);
+                // Возможно как-то тут стоит обрабатывать ошибки...
+                $this->telegramFacade->handleJob($job);
             }
 
             $update_id = $this->telegramFacade->getNextUpdateId();
-            $updates = $this->getUpdates($update_id, 10);
+            $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
 
             if( empty($update) || empty($update['result']) ) {
                 continue;
@@ -102,13 +99,5 @@ class Updates {
 
     private function buildVO(string $class, array $data): UpdateInterface {
         return $class::from($data);
-    }
-
-    private function handleJob(Job $job): void {
-        $this->telegramFacade->handleJob($job);
-    }
-
-    private function getUpdates(int $update_id, int $timeout): array {
-        return $this->telegramRequestFacade->getUpdates($update_id, $timeout);
     }
 }

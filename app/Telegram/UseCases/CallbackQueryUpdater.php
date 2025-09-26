@@ -85,6 +85,7 @@ class CallbackQueryUpdater {
         }
     }
 
+    // нужно как-то сократить функцию...
     private function handleSendPost(CallbackQueryUpdate $update, string $callback): void {
         $message_id = $update->getMessageId();
         $user_id = $update->getUserId();

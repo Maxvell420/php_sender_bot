@@ -33,16 +33,26 @@ class TelegramMessage {
         };
     }
 
+    // Сейчас это просто блокировка юзера
+    public function handleWrongJob(int $user_id, string $text): void {
+        if( $text == self::WRONG_REPLY_MARKUP ) {
+            $this->blockUser($user_id);
+        }
+    }
+
+    private function blockUser(int $user_id): void {
+        $user = $this->userRepository->findByTgId($user_id);
+
+        if( $user ) {
+            $user->setKicked();
+            $this->userRepository->persist($user);
+        }
+    }
+
     private function handleNewChatMember(MyChatMemberUpdate $update, int $status, string $error_message): void {
         if( $status == 403 ) {
             $user_id = $update->getUserId();
-            $user = $this->userRepository->findByTgId($user_id);
-
-            if( $user ) {
-                $user->setKicked();
-                $this->userRepository->persist($user);
-            }
-
+            $this->blockUser($user_id);
             return;
         }
 
