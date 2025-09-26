@@ -15,46 +15,8 @@ use App\Telegram\UseCases\JobsHandler;
 class TelegramSenderDemon extends InnerDemon {
 
     public function run(): void {
-        $secret = env('TG_BOT_SECRET');
-        $telegram = new TelegramRequest($secret);
-
         $useCase = new Updates($telegram);
-
-        // Вообще вытащить это все из демона в класс Updates и нынче все эти принты не нужны
-        while( true ) {
-            $update = new Update();
-            $update_id = $update->getNextUpdateId();
-            print('ID обновления: ' . $update_id . "\n");
-            $job = new Job();
-            $job = $job->findFirstNotCompleted();
-
-            if( $job ) {
-                print("Выполняю работу $job->id" . "\n");
-                $useCase->handleJob($job);
-                print("Выполнил работу $job->id" . "\n");
-            }
-            else {
-                print('работ нет' . "\n");
-            }
-
-            $updates = $useCase->getUpdates($update_id, 10);
-
-            if( empty($updates) ) {
-                print('Какая-то ошибка из телеги' . "\n");
-                sleep(env('WRONG_ANSWER'));
-                continue;
-            }
-
-            if( empty($updates['result']) ) {
-                continue;
-            }
-
-            print('обновления есть' . "\n");
-
-            foreach($updates['result'] as $update) {
-                $useCase->handleUpdate($update);
-            }
-        }
+        $useCase->work();
     }
 
     protected function handleFallback(): void {}

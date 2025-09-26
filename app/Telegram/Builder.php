@@ -3,7 +3,6 @@
 namespace App\Telegram;
 
 use App\Libs\Infra\Context;
-use App\Libs\Telegram\TelegramRequest;
 use App\Repositories\ {
     BotChannelRepository,
     JobRepository,
@@ -23,7 +22,6 @@ use App\Telegram\UseCases\ {
     MessageUpdater,
     MyChatMemberUpdater,
     StateUpdater,
-    TelegramWrongMessagesHandler,
     Updates
 };
 
@@ -36,7 +34,7 @@ class Builder {
             telegramRequest:$this->buildTelegramRequestFacade(),
             inlineBuilder:$this->buildInlineBuilder(),
             messageBuilder:$this->buildMessageBuilder(),
-            userRepository:
+            userRepository:$this->buildUserRepository()
         );
     }
 
@@ -45,7 +43,7 @@ class Builder {
     }
 
     protected function buildTelegramRequestFacade(): TelegramRequestFacade {
-        return new TelegramRequestFacade($this->cntx->telegramRequest);
+        return new TelegramRequestFacade($this->cntx);
     }
 
     protected function buildJobsHandler(): JobsHandler {
@@ -57,7 +55,12 @@ class Builder {
     }
 
     protected function buildChannelPostUpdater(): ChannelPostUpdater {
-        return new ChannelPostUpdater(messageBuilder:$this->buildMessageBuilder());
+        return new ChannelPostUpdater(
+            messageBuilder:$this->buildMessageBuilder(),
+            userRepository:$this->buildUserRepository(),
+            stateRepository:$this->buildStateRepository(),
+            botChannelRepository:$this->buildBotChannelRepository()
+        );
     }
 
     protected function buildMessageUpdater(): MessageUpdater {
@@ -65,12 +68,14 @@ class Builder {
             telegramRequest:$this->buildTelegramRequestFacade(),
             inlineBuilder:$this->buildInlineBuilder(),
             messageBuilder:$this->buildMessageBuilder(),
-            stateUpdater:$this->buildStateUpdater()
+            stateUpdater:$this->buildStateUpdater(),
+            userRepository:$this->buildUserRepository(),
+            stateRepository:$this->buildStateRepository()
         );
     }
 
     protected function buildMyChatMemberUpdater(): MyChatMemberUpdater {
-        return new MyChatMemberUpdater();
+        return new MyChatMemberUpdater(userRepository:$this->buildUserRepository(), botChannelRepository:$this->buildBotChannelRepository());
     }
 
     protected function buildStateUpdater(): StateUpdater {
@@ -82,7 +87,7 @@ class Builder {
     }
 
     protected function buildUpdates(): Updates {
-        return new Updates($this->telegramRequest);
+        return new Updates($this->cntx->telegramRequest, $this->buildUpdateRepository(), $this->buildJobRepository());
     }
 
     protected function buildUserRepository(): UserRepository {
@@ -115,9 +120,5 @@ class Builder {
 
     protected function buildUpdateRepository(): UpdateRepository {
         return new UpdateRepository($this->cntx);
-    }
-
-    protected function buildTelegramWrongMessageHandler(): TelegramWrongMessagesHandler {
-        return new TelegramWrongMessagesHandler();
     }
 }

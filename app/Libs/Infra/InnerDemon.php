@@ -6,7 +6,7 @@ use App\Libs\Infra\Context;
 use Error;
 use Throwable;
 
-// Родоночальник демонов, он обрабатывает все ошибки которые прилетают с демонов которые демоны не обработали
+// Родончальник демонов, он обрабатывает все ошибки которые прилетают с демонов которые демоны не обработали
 abstract class InnerDemon {
 
     public function __construct(private Context $context) {}
