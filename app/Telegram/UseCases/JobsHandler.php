@@ -3,27 +3,24 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Models\{
+use App\Models\ {
     Job,
     JobUser
 };
 use App\Telegram\Enums;
 use App\Telegram\TelegramRequestFacade;
 
-class JobsHandler
-{
+class JobsHandler {
 
     public function __construct(private TelegramRequestFacade $telegramRequest, private MessageBuilder $messageBuilder) {}
 
-    public function handleJob(Job $job): void
-    {
+    public function handleJob(Job $job): void {
         match ($job->job_type) {
             Enums\JobTypes::Create_post->value => $this->handleSendPost($job),
         };
     }
 
-    private function handleSendPost(Job $job): void
-    {
+    private function handleSendPost(Job $job): void {
         $count = 0;
 
         $update = json_decode($job->json, true);
@@ -34,15 +31,21 @@ class JobsHandler
          * @var JobUser[] $userJobs
          */
         $message = $update['message'];
+        $messages_send = 0;
 
         $actor_id = $job->actor_id;
 
-        foreach ($userJobs as $user) {
-            if ($user->isCompleted()) {
+        foreach($userJobs as $user) {
+            if( $messages_send == 20 ) {
+                sleep(1);
+                return;
+            }
+
+            if( $user->isCompleted() ) {
                 continue;
             }
 
-            if ($user->actor_id == $actor_id) {
+            if( $user->actor_id == $actor_id ) {
                 continue;
             }
 
@@ -57,12 +60,12 @@ class JobsHandler
                 TelegramActions::sendVideo->value => $this->telegramRequest->sendVideo($message),
                 TelegramActions::sendAnimation->value => $this->telegramRequest->sendAnimation($message),
             };
-
             $user->complete();
             $user->save();
+            $messages_send++;
         }
 
-        $message = $this->messageBuilder->buildMessage(chat_id: $job->actor_id, text: "Пост был разослан $count пользователям");
+        $message = $this->messageBuilder->buildMessage(chat_id:$job->actor_id, text:"Пост был разослан $count пользователям");
         $this->telegramRequest->sendMessage($message);
         $job->complete();
         $job->save();
