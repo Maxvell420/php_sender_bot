@@ -14,6 +14,12 @@ use App\Repositories\ {
     UpdateRepository,
     UserRepository
 };
+use App\Telegram\ErrorHandlers\ {
+    TelegramBase,
+    TelegramMessage,
+    Unhandled
+};
+
 use App\Telegram\UseCases\ {
     CallbackQueryUpdater,
     ChannelPostUpdater,
@@ -51,7 +57,23 @@ class Builder {
     }
 
     protected function buildJobsHandler(): JobsHandler {
-        return new JobsHandler(telegramRequest:$this->buildTelegramRequestFacade(), messageBuilder:$this->buildMessageBuilder());
+        return new JobsHandler(
+            telegramRequest:$this->buildTelegramRequestFacade(),
+            messageBuilder:$this->buildMessageBuilder(),
+            msgErrHandler:$this->buildTelegramWrongMessageHandler()
+        );
+    }
+
+    protected function buildTelegramWrongMessageHandler(): TelegramMessage {
+        return new TelegramMessage(userRepository:$this->buildUserRepository(), logRepository:$this->buildLogRepository());
+    }
+
+    protected function buildTelegrambaseHandler(): TelegramBase {
+        return new TelegramBase(
+            updateRepository:$this->buildUpdateRepository(),
+            telegramRequest:$this->buildTelegramRequestFacade(),
+            messageBuilder:$this->buildMessageBuilder()
+        );
     }
 
     protected function buildMessageBuilder(): MessageBuilder {
@@ -82,6 +104,14 @@ class Builder {
         return new MyChatMemberUpdater(userRepository:$this->buildUserRepository(), botChannelRepository:$this->buildBotChannelRepository());
     }
 
+    protected function buildUpdates(): Updates {
+        return new Updates($this->buildTelegramUpdatesFacade(), $this->buildTelegramRequestFacade());
+    }
+
+    protected function buildTelegramUpdatesFacade(): TelegramUpdatesFacade {
+        return new TelegramUpdatesFacade($this->cntx);
+    }
+
     protected function buildStateUpdater(): StateUpdater {
         return new StateUpdater(
             telegramRequest:$this->buildTelegramRequestFacade(),
@@ -90,8 +120,8 @@ class Builder {
         );
     }
 
-    protected function buildUpdates(): Updates {
-        return new Updates($this->cntx->telegramRequest, $this->buildUpdateRepository(), $this->buildJobRepository());
+    protected function buildErrorHandler(): Unhandled {
+        return new Unhandled($this->buildUpdateRepository(), $this->buildLogRepository());
     }
 
     protected function buildUserRepository(): UserRepository {

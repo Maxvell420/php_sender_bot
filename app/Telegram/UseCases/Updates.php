@@ -11,7 +11,6 @@ use App\Telegram\ {
     TelegramUpdatesFacade
 };
 use App\Models\ {
-    Job,
     Update
 };
 
@@ -85,9 +84,9 @@ class Updates {
                 ENums\UpdateType::ChannelPost => $this->telegramFacade->handleChannelPost($update)
             };
         } catch (TelegramBaseException $e) {
-
+            $this->telegramFacade->handleWrongUpdate($update, $e->getMessage());
         } catch (TelegramApiException $e) {
-
+            $this->telegramFacade->handleWrongTelegramRequest($update, $e->getMessage(), $e->getCode());
         }
     }
 
@@ -99,5 +98,17 @@ class Updates {
 
     private function buildVO(string $class, array $data): UpdateInterface {
         return $class::from($data);
+    }
+
+    public function handleFallback(string $message): void {
+        $update_id = $this->telegramFacade->getNextUpdateId();
+        $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
+
+        if( empty($updates) || empty($updates['result']) ) {
+            return;
+        }
+
+        $update = $updates['result'][0];
+        $this->telegramFacade->handleErrorUpdate($update, $message);
     }
 }
