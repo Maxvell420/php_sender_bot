@@ -38,14 +38,8 @@ class JobsHandler {
          */
         $message = $update['message'];
 
-        $actor_id = $job->actor_id;
-
         foreach($userJobs as $user) {
             if( $user->isCompleted() ) {
-                continue;
-            }
-
-            if( $user->actor_id == $actor_id ) {
                 continue;
             }
 

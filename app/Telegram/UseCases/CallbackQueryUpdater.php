@@ -140,9 +140,9 @@ class CallbackQueryUpdater {
         $count = 0;
 
         foreach($users as $user) {
-            // if( $user_id == $user->tg_id ) {
-            //     continue;
-            // }
+            if( $user_id == $user->tg_id ) {
+                continue;
+            }
 
             $count++;
 
