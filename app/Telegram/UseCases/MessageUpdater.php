@@ -146,6 +146,7 @@ class MessageUpdater {
         }
 
         // Как-то надо подругому получить эти захардкоженные штуки
+        // Может создать POST в модели и менять его...
         $link = env('TG_CHANNEL_INVITE_LINK');
         $message = new Post()->getStartText();
         $file_id = env('TG_FILE_ID');
@@ -169,6 +170,7 @@ class MessageUpdater {
             $keyboard = $this->inlineBuilder->buildKeyboard($buttons);
         }
 
+        // Вот это надо контролировать parse_mode
         $message = $this->messageBuilder->buildDocument(chat_id:$user_id, caption:$message, file_id:$file_id, keyboard:$keyboard, params:['parse_mode' => 'MarkdownV2']);
 
         $this->telegramRequest->sendDocument($message);

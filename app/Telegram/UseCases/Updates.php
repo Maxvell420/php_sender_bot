@@ -44,7 +44,7 @@ class Updates {
             $update_id = $this->telegramFacade->getNextUpdateId();
             $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
 
-            if( empty($update) || empty($update['result']) ) {
+            if( empty($updates) || empty($updates['result']) ) {
                 continue;
             }
 
@@ -63,7 +63,6 @@ class Updates {
                     Enums\UpdateType::CallbackQuery => $this->buildVO(CallbackQueryUpdate::class, $data),
                     Enums\UpdateType::ChannelPost => $this->buildVO(ChannelPostUpdate::class, $data)
                 };
-
                 $this->processUpdate($update);
             }
         }

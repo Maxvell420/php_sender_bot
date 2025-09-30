@@ -25,7 +25,7 @@ class TelegramMessage {
 
     private const string WRONG_REPLY_MARKUP = "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message";
 
-    public function handleWrongUpdate(Update $update, int $status, string $error_message): void {
+    public function handleWrongUpdate(Update $update, string $error_message, int $status): void {
         match ($update->getType()) {
             Enums\UpdateType::MyChatMember => $this->handleNewChatMember($update, $status, $error_message),
             Enums\UpdateType::CallbackQuery => $this->handleCallbackQuery($update, $status, $error_message),
@@ -56,7 +56,7 @@ class TelegramMessage {
             return;
         }
 
-        $this->handleSendData($update, $status, $error_message);
+        $this->handleSendData($update, $error_message);
     }
 
     private function handleCallbackQuery(CallbackQueryUpdate $update, int $status, string $error_message): void {
@@ -64,7 +64,7 @@ class TelegramMessage {
             return;
         }
 
-        $this->handleSendData($update, $status, $error_message);
+        $this->handleSendData($update, $error_message);
     }
 
     private function handleSendData(Update $update, string $error_message): void {
