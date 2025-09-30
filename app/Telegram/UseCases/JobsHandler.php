@@ -37,8 +37,14 @@ class JobsHandler {
          * @var JobUser[] $userJobs
          */
         $message = $update['message'];
+        $messages_send = 0;
 
         foreach($userJobs as $user) {
+            if( $messages_send == 20 ) {
+                sleep(1);
+                return;
+            }
+
             if( $user->isCompleted() ) {
                 continue;
             }
@@ -62,6 +68,7 @@ class JobsHandler {
 
             $user->complete();
             $user->save();
+            $messages_send++;
         }
 
         $message = $this->messageBuilder->buildMessage(chat_id:$job->actor_id, text:"Пост был разослан $count пользователям");
