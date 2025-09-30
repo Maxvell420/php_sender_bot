@@ -3,70 +3,42 @@
 namespace App\Telegram;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Libs\Telegram\TelegramApiException;
-use App\Models\Log;
-use Exception;
 
-// Это скорее внутренний фасад который будет перехватывать ошибки Telegram и кидать уже сообщения при возможности
 class TelegramRequestFacade extends Builder {
 
     public function sendDocument(array $data): void {
-        $this->sendData($data, TelegramActions::sendDocument);
+        $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $data);
     }
 
     public function sendMessage(array $data): void {
-        $this->sendData($data, TelegramActions::sendMessage);
+        $this->telegramRequest->sendMessage(TelegramActions::sendMessage, $data);
     }
 
     public function copyMessage(array $data): void {
-        $this->sendData($data, TelegramActions::copyMessage);
+        $this->telegramRequest->sendMessage(TelegramActions::copyMessage, $data);
     }
 
     public function copyMessages(array $data): void {
-        $this->sendData($data, TelegramActions::copyMessages);
+        $this->telegramRequest->sendMessage(TelegramActions::copyMessages, $data);
     }
 
     public function sendPhoto(array $data): void {
-        $this->sendData($data, TelegramActions::sendPhoto);
+        $this->telegramRequest->sendMessage(TelegramActions::sendPhoto, $data);
     }
 
     public function sendAnimation(array $data): void {
-        $this->sendData($data, TelegramActions::sendAnimation);
+        $this->telegramRequest->sendMessage(TelegramActions::sendAnimation, $data);
     }
 
     public function sendVideo(array $data): void {
-        $this->sendData($data, TelegramActions::sendVideo);
+        $this->telegramRequest->sendMessage(TelegramActions::sendVideo, $data);
     }
 
     public function sendEditMessageReplyMarkup(array $data): void {
-        $this->sendData($data, TelegramActions::editMessageReplyMarkup);
+        $this->telegramRequest->sendMessage(TelegramActions::editMessageReplyMarkup, $data);
     }
 
     public function getUpdates(?int $offset = null, ?int $timeout = 10): array {
-        try {
-            return $this->telegramRequest->getUpdates($offset, $timeout);
-        } catch (Exception $e) {
-            $log = new Log();
-            $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
-            $log->save();
-            sleep(env('WRONG_ANSWER'));
-        }
-
-        return [];
-    }
-
-    private function sendData(array $data, TelegramActions $action): void {
-        try {
-            $this->telegramRequest->sendMessage($action, $data);
-        } catch (TelegramApiException $e) {
-            $useCase = $this->buildTelegramWrongMessageHandler();
-            $useCase->handleTelegramRequest($action, $data, $e->getCode(), $e->getMessage());
-        } catch (Exception $e) {
-            print('Какая-то ошибка из телеги' . "\n");
-            $log = new Log();
-            $log->info = json_encode(['status' => $e->getCode(), 'message' => $e->getMessage()]);
-            $log->save();
-            sleep(env('WRONG_ANSWER'));
-        }
+        return $this->telegramRequest->getUpdates($offset, $timeout);
     }
 }

@@ -3,16 +3,22 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
+use App\Libs\Telegram\TelegramApiException;
 use App\Models\ {
     Job,
     JobUser
 };
 use App\Telegram\Enums;
+use App\Telegram\ErrorHandlers\TelegramMessage;
 use App\Telegram\TelegramRequestFacade;
 
 class JobsHandler {
 
-    public function __construct(private TelegramRequestFacade $telegramRequest, private MessageBuilder $messageBuilder) {}
+    public function __construct(
+        private TelegramRequestFacade $telegramRequest,
+        private MessageBuilder $messageBuilder,
+        private TelegramMessage $msgErrHandler
+    ) {}
 
     public function handleJob(Job $job): void {
         match ($job->job_type) {
@@ -33,8 +39,6 @@ class JobsHandler {
         $message = $update['message'];
         $messages_send = 0;
 
-        $actor_id = $job->actor_id;
-
         foreach($userJobs as $user) {
             if( $messages_send == 20 ) {
                 sleep(1);
@@ -45,21 +49,23 @@ class JobsHandler {
                 continue;
             }
 
-            if( $user->actor_id == $actor_id ) {
-                continue;
-            }
-
             $count++;
             $message['chat_id'] = $user->actor_id;
-            match ($action) {
-                TelegramActions::copyMessage->value => $this->telegramRequest->copyMessage($message),
-                TelegramActions::copyMessages->value => $this->telegramRequest->copyMessages($message),
-                TelegramActions::sendMessage->value => $this->telegramRequest->sendMessage($message),
-                TelegramActions::sendDocument->value => $this->telegramRequest->sendDocument($message),
-                TelegramActions::sendPhoto->value => $this->telegramRequest->sendPhoto($message),
-                TelegramActions::sendVideo->value => $this->telegramRequest->sendVideo($message),
-                TelegramActions::sendAnimation->value => $this->telegramRequest->sendAnimation($message),
-            };
+
+            try {
+                match ($action) {
+                    TelegramActions::copyMessage->value => $this->telegramRequest->copyMessage($message),
+                    TelegramActions::copyMessages->value => $this->telegramRequest->copyMessages($message),
+                    TelegramActions::sendMessage->value => $this->telegramRequest->sendMessage($message),
+                    TelegramActions::sendDocument->value => $this->telegramRequest->sendDocument($message),
+                    TelegramActions::sendPhoto->value => $this->telegramRequest->sendPhoto($message),
+                    TelegramActions::sendVideo->value => $this->telegramRequest->sendVideo($message),
+                    TelegramActions::sendAnimation->value => $this->telegramRequest->sendAnimation($message),
+                };
+            } catch (TelegramApiException $e) {
+                $this->msgErrHandler->handleWrongJob($user->actor_id, $e->getMessage());
+            }
+
             $user->complete();
             $user->save();
             $messages_send++;

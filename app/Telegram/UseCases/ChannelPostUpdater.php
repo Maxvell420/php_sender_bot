@@ -3,57 +3,64 @@
 namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
-use App\Models\{
-    State,
-    BotChannel,
-    User
+use App\Repositories\ {
+    BotChannelRepository,
+    StateRepository,
+    UserRepository
 };
 use App\Telegram\Updates\ChannelPostUpdate;
 
-class ChannelPostUpdater
-{
+class ChannelPostUpdater {
 
-    public function __construct(private MessageBuilder $messageBuilder) {}
+    public function __construct(
+        private MessageBuilder $messageBuilder,
+        private UserRepository $userRepository,
+        private StateRepository $stateRepository,
+        private BotChannelRepository $botChannelRepository
+    ) {}
 
-    public function handleUpdate(ChannelPostUpdate $update): void
-    {
+    public function handleUpdate(ChannelPostUpdate $update): void {
         $channel_id = $update->getChatId();
-        $bot_channel = new BotChannel()->findByChannelId($channel_id);
+        $bot_channel = $this->botChannelRepository->findByChannelId($channel_id);
 
-        if (!$bot_channel) {
+        if( !$bot_channel ) {
             return;
         }
 
-        $user = new User()->findByTgId($bot_channel->tg_id);
+        $user = $this->userRepository->findByTgId($bot_channel->tg_id);
 
-        if (!$user || !$user->isAdmin()) {
+        if( !$user || !$user->isAdmin() ) {
             return;
         }
 
-        $state = new State()->findByUser($user->tg_id);
+        $state = $this->stateRepository->findByUser($user->tg_id);
 
-        if (!$state) {
+        if( !$state ) {
             return;
         }
 
-        if ($update->hasMediaGroup()) {
+        if( $update->hasMediaGroup() ) {
             $json = json_decode($state->json, true);
 
-            if (!$json) {
+            if( !$json ) {
                 $media_group = $update->getMediaGroup();
-            } elseif (!isset($json['media_group_id'])) {
+            }
+            elseif( !isset($json['media_group_id']) ) {
                 $media_group = $update->getMediaGroup();
-            } else {
+            }
+            else {
                 $media_group = $json['media_group_id'];
             }
 
-            if ($media_group != $update->getMediaGroup()) {
+            if( $media_group != $update->getMediaGroup() ) {
                 $media_group = $update->getMediaGroup();
                 $message_ids = [$update->getMessageId()];
-            } else {
-                if (isset($json['data']['message_ids'])) {
+            }
+            else {
+                if( isset($json['data']['message_ids']) ) {
                     $message_ids = json_decode($json['data']['message_ids'], true);
-                } else {
+                }
+                else {
                     $message_ids = [];
                 }
 
@@ -67,13 +74,14 @@ class ChannelPostUpdater
             ];
 
             $state->json = $new_json;
-            $state->save();
-        } else {
+        }
+        else {
             $state->json = [
                 'method' => TelegramActions::copyMessage->value,
                 'data' => $this->messageBuilder->buildCopyMessage($state->actor_id, $channel_id, $update->getMessageId())
             ];
-            $state->save();
         }
+
+        $this->stateRepository->persist($state);
     }
 }

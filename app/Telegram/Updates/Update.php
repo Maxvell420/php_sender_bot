@@ -8,9 +8,5 @@ interface Update {
 
     public function getUpdateId(): int;
 
-    public function hasFrom(): bool;
-
-    public function getUserId(): int;
-
     public function getType(): UpdateType;
 }

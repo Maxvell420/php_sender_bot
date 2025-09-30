@@ -2,15 +2,18 @@
 
 namespace App\Telegram\UseCases;
 
+use App\Libs\Telegram\ {
+    TelegramApiException,
+};
 use App\Telegram\ {
     Enums,
+    TelegramRequestFacade,
     TelegramUpdatesFacade
 };
 use App\Models\ {
-    Job,
-    Log,
     Update
 };
+
 use App\Telegram\Updates\ {
     CallbackQueryUpdate,
     ChannelPostUpdate,
@@ -18,18 +21,40 @@ use App\Telegram\Updates\ {
     MessageUpdate
 };
 use App\Telegram\Updates\Update as UpdateInterface;
-use Throwable;
-use App\Http\Exceptions\ValidationException;
-use App\Libs\Telegram\TelegramRequest;
 use App\Telegram\Exceptions\TelegramBaseException;
 use Error;
 
 // Корневой класс который все разруливает
 class Updates {
 
-    public function __construct(private TelegramRequest $telegramRequest) {}
+    public function __construct(
+        private TelegramUpdatesFacade $telegramFacade,
+        private TelegramRequestFacade $telegramRequestFacade
+    ) {}
 
-    public function handleUpdate(array $data): void {
+    public function work(): void {
+        while( true ) {
+            $job = $this->telegramFacade->findFirstJobNotCompleted();
+
+            if( $job ) {
+                // Возможно как-то тут стоит обрабатывать ошибки...
+                $this->telegramFacade->handleJob($job);
+            }
+
+            $update_id = $this->telegramFacade->getNextUpdateId();
+            $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
+
+            if( empty($updates) || empty($updates['result']) ) {
+                continue;
+            }
+
+            foreach($updates['result'] as $update) {
+                $this->handleUpdate($update);
+            }
+        }
+    }
+
+    private function handleUpdate(array $data): void {
         foreach(Enums\UpdateType::cases() as $case) {
             if( isset($data[$case->value]) ) {
                 $update = match ($case) {
@@ -38,63 +63,51 @@ class Updates {
                     Enums\UpdateType::CallbackQuery => $this->buildVO(CallbackQueryUpdate::class, $data),
                     Enums\UpdateType::ChannelPost => $this->buildVO(ChannelPostUpdate::class, $data)
                 };
-
                 $this->processUpdate($update);
             }
         }
 
-        // Может быть стоит завести дефолтный обьект на такие ситуации чтобы вытаскивать $update_id
-        $update_id = $data['update_id'];
-        $this->saveUpdate($update_id);
+        if( !isset($update) ) {
+            throw new Error('WRONG_UPDATE');
+        }
+
+        $this->saveUpdate($update->getUpdateId());
     }
 
     private function processUpdate(UpdateInterface $update) {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-
         try {
             match ($update->getType()) {
-                Enums\UpdateType::MyChatMember => $facade->handleNewChatmember($update),
-                Enums\UpdateType::Message => $facade->handleMessage($update),
-                Enums\UpdateType::CallbackQuery => $facade->handleCallback($update),
-                ENums\UpdateType::ChannelPost => $facade->handleChannelPost($update)
+                Enums\UpdateType::MyChatMember => $this->telegramFacade->handleNewChatmember($update),
+                Enums\UpdateType::Message => $this->telegramFacade->handleMessage($update),
+                Enums\UpdateType::CallbackQuery => $this->telegramFacade->handleCallback($update),
+                ENums\UpdateType::ChannelPost => $this->telegramFacade->handleChannelPost($update)
             };
         } catch (TelegramBaseException $e) {
-            if( $update->getUserId() ) {
-                $facade->sendErrorMessage($update->getUserId(), $e->getMessage());
-            }
-
-            $log = new Log();
-            $log->info = json_encode(['message' => $e->getMessage()]);
-            $log->save();
-        } catch (Error $e) {
-            $facade->sendErrorMessage(env('TG_USER'), 'Что-то пошло нет так');
-            $log = new Log();
-            $log->info = json_encode(['message' => $e->getMessage()]);
-            $log->save();
+            $this->telegramFacade->handleWrongUpdate($update, $e->getMessage());
+        } catch (TelegramApiException $e) {
+            $this->telegramFacade->handleWrongTelegramRequest($update, $e->getMessage(), $e->getCode());
         }
     }
 
     private function saveUpdate(int $update_id) {
         $update = new Update;
         $update->update_id = $update_id;
-        $update->save();
+        $this->telegramFacade->persistUpdate($update);
     }
 
     private function buildVO(string $class, array $data): UpdateInterface {
-        try {
-            return $class::from($data);
-        } catch (Throwable) {
-            throw new ValidationException('Не смогли сконструировать обьект из сообщения: ' . json_encode($data));
+        return $class::from($data);
+    }
+
+    public function handleFallback(string $message): void {
+        $update_id = $this->telegramFacade->getNextUpdateId();
+        $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
+
+        if( empty($updates) || empty($updates['result']) ) {
+            return;
         }
-    }
 
-    public function handleJob(Job $job): void {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-        $facade->handleJob($job);
-    }
-
-    public function getUpdates(int $update_id, int $timeout): array {
-        $facade = new TelegramUpdatesFacade($this->telegramRequest);
-        return $facade->getUpdates($update_id, $timeout);
+        $update = $updates['result'][0];
+        $this->telegramFacade->handleErrorUpdate($update, $message);
     }
 }

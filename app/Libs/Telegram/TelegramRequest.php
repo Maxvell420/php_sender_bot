@@ -2,6 +2,7 @@
 
 namespace App\Libs\Telegram;
 
+use Error;
 use Exception;
 
 class TelegramRequest {
@@ -78,7 +79,7 @@ class TelegramRequest {
             throw new Exception('Ошибка с сетью?', $httpCode);
         }
         else {
-            return [];
+            throw new Error('Ошибка из тг');
         }
     }
 }
