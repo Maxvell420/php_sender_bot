@@ -12,6 +12,7 @@ use App\Telegram\Enums\ {
     TelegramEntities
 };
 use App\Telegram\Exceptions\TelegramBaseException;
+use CURLFile;
 
 class MessageBuilder {
 
@@ -68,6 +69,10 @@ class MessageBuilder {
 
         $data = $this->handleParts($data, $keyboard, $caption);
         return $data;
+    }
+
+    public function buildFile(int $chat_id, CURLFile $file): array {
+        return ['chat_id' => $chat_id, 'document' => $file];
     }
 
     public function buildPhoto(int $chat_id, string $file_id, ?string $caption = null, ?InlineKeyboard $keyboard = null, array $params = []): array {

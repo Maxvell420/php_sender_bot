@@ -17,18 +17,21 @@ class TelegramRequest {
      */
     public function getUpdates(?int $offset = null, ?int $timeout = null): array {
         $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset, $timeout);
-        $params = ['timeout' => $timeout];
-        return $this->sendRequest($url, params:$params);
+        // Это параметры и переделать
+        $data = ['timeout' => $timeout];
+        return $this->sendRequest($url, data:$data);
     }
 
-    public function sendMessage(TelegramActions $action, array $message): void {
+    public function sendMessage(TelegramActions $action, array $message, array $params = []): void {
         $url = $this->tg_url;
         $data = ['post_fields' => $message, 'method' => CURLOPT_POST];
         $url = $this->buildUrlFromAction($action);
-        $this->sendRequest($url, $data);
+
+        $this->sendRequest($url, $data, $params);
     }
 
     private function buildUrlFromAction(TelegramActions $action, ?int $offset = null, ?int $timeout = null): string {
+        // тут что-то навертел и тоже нужно по другому формировать. через массив параметров?
         $query = '';
 
         if( !$timeout ) {
@@ -51,16 +54,26 @@ class TelegramRequest {
         return "$tg_url/bot$secret/$action->value$query";
     }
 
-    private function sendRequest(string $url, array $params = []): array {
-        $timeout = $params['timeout'] ?? 10 + 1;
-        $method = $params['method'] ?? CURLOPT_HTTPGET;
+    private function sendRequest(string $url, array $data, array $params = []): array {
+        $timeout = $data['timeout'] ?? 10 + 1;
+        $method = $data['method'] ?? CURLOPT_HTTPGET;
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         if( $method == CURLOPT_POST ) {
             curl_setopt($curl, $method, true);
-            $post_fiels = $params['post_fields'];
+            $post_fiels = $data['post_fields'];
             curl_setopt($curl, CURLOPT_POSTFIELDS, $post_fiels);
+
+            if( isset($params['file']) ) {
+                curl_setopt(
+                    $curl,
+                    CURLOPT_HTTPHEADER,
+                    [
+                        "Content-Type: multipart/form-data"
+                    ]
+                );
+            }
         }
 
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $timeout + 1);

@@ -96,7 +96,8 @@ class Builder {
             messageBuilder:$this->buildMessageBuilder(),
             stateUpdater:$this->buildStateUpdater(),
             userRepository:$this->buildUserRepository(),
-            stateRepository:$this->buildStateRepository()
+            stateRepository:$this->buildStateRepository(),
+            logRepository:$this->buildLogRepository()
         );
     }
 

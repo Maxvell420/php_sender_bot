@@ -41,4 +41,8 @@ class TelegramRequestFacade extends Builder {
     public function getUpdates(?int $offset = null, ?int $timeout = 10): array {
         return $this->telegramRequest->getUpdates($offset, $timeout);
     }
+
+    public function sendFile(array $data): void {
+        $this->telegramRequest->sendMessage(TelegramActions::sendDocument, $data, ['file' => true]);
+    }
 }

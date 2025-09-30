@@ -10,11 +10,14 @@ use App\Models\ {
     Post,
     State
 };
+use App\Repositories\LogRepository;
 use App\Repositories\StateRepository;
 use App\Repositories\UserRepository;
 use App\Telegram\Enums\States;
+use App\Telegram\Exceptions\TelegramBaseException;
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Values\CallbackDataValues;
+use CURLFile;
 use Illuminate\Database\Eloquent\Collection;
 
 class MessageUpdater {
@@ -25,7 +28,8 @@ class MessageUpdater {
         private MessageBuilder $messageBuilder,
         private StateUpdater $stateUpdater,
         private UserRepository $userRepository,
-        private StateRepository $stateRepository
+        private StateRepository $stateRepository,
+        private LogRepository $logRepository
     ) {}
 
     public function handleUpdate(MessageUpdate $update): void {
@@ -99,9 +103,7 @@ class MessageUpdater {
             return;
         }
 
-        $logs = new Log();
-        /** @var Collection $logs */
-        $logs = $logs->listLast();
+        $logs = $this->logRepository->listLast();
 
         if( $logs->isEmpty() ) {
             $text = 'На данный момент логов нет';
@@ -109,34 +111,39 @@ class MessageUpdater {
             $this->telegramRequest->sendMessage($message);
             return;
         }
-        else {
-            $text = '';
 
-            $length = 0;
+        $path = 'logs.txt';
 
-            /** @var Log $log */
-
-            foreach($logs as $log) {
-                $length = mb_strlen($text);
-
-                if( $length > 3500 ) {
-                    break;
-                }
-
-                $info = $log->info;
-
-                $info = json_decode($info, true);
-
-                if( !isset($info['message']) ) {
-                    continue;
-                }
-
-                $text .= $log->id . ":" . $info['message'] . ' ' . $log->created_at . "\n";
-            }
+        if( file_exists($path) ) {
+            unlink($path);
         }
 
-        $message = $this->messageBuilder->buildMessage($user->tg_id, $text);
-        $this->telegramRequest->sendMessage($message);
+        $file = fopen($path, "w");
+
+        if( !$file ) {
+            throw new TelegramBaseException('Не удалось записать файл');
+        }
+
+        foreach($logs as $log) {
+            $info = $log->info;
+            $info = json_decode($info, true);
+
+            if( !isset($info['message']) ) {
+                continue;
+            }
+
+            $line = $log->id . ":" . $info['message'] . ' ' . $log->created_at . $log->data;
+
+            fwrite($file, $line . PHP_EOL);
+        }
+
+        fclose($file);
+
+        $file = new CURLFile($path);
+
+        $message = $this->messageBuilder->buildFile($user->tg_id, $file);
+        $this->telegramRequest->sendFile($message);
+        unlink($path);
     }
 
     public function handleStart(MessageUpdate $data, User $user, ?State $state): void {
