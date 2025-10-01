@@ -23,6 +23,7 @@ abstract class InnerDemon
             try {
                 $this->run();
             } catch (Throwable $e) {
+
                 $this->handleFallback($e->getMessage());
                 // зайдем сюда если пришла какая-то фигня из тг из которой не смогли сконструировать обьект
 
