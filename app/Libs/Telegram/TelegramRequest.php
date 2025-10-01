@@ -92,7 +92,7 @@ class TelegramRequest
         } elseif (str_starts_with($httpCode, 4)) {
             throw new TelegramApiException($response, $httpCode);
         } elseif (is_bool($response)) {
-            throw new Exception($response, $httpCode);
+            throw new Exception('Ошибка с курлом', $httpCode);
         } else {
             throw new Error($response);
         }
