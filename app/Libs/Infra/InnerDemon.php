@@ -12,11 +12,11 @@ abstract class InnerDemon {
     public function __construct(protected Context $cntx) {}
 
     // Основная работа
-    public abstract function run(): void;
+    protected abstract function run(): void;
 
     protected abstract function handleFallback(string $message): void;
 
-    protected function runJob(): void {
+    public function runJob(): void {
         try {
             $this->run();
         } catch (Throwable $e) {

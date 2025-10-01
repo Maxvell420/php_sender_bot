@@ -28,6 +28,6 @@ class RunDemon extends Command {
     public function handle() {
         $context = new Context();
         $demon = new TelegramSenderDemon($context);
-        $demon->run();
+        $demon->runJob();
     }
 }

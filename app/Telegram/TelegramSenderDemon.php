@@ -9,7 +9,7 @@ class TelegramSenderDemon extends InnerDemon {
 
     private Updates $updates;
 
-    public function run(): void {
+    protected function run(): void {
         $facade = new TelegramUpdatesFacade($this->cntx);
         $this->updates = $facade->getUpdatesCommander();
         $this->updates->work();
