@@ -26,6 +26,11 @@ class Unhandled
         $this->handleSendData($error_message);
     }
 
+    public function handleException(string $message): void
+    {
+        $this->handleSendData($message);
+    }
+
     private function handleSendData(string $error_message): void
     {
         $save_data = ['message' => $error_message, 'data' => 'no data'];

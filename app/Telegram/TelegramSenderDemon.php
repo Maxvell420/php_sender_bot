@@ -20,12 +20,16 @@ class TelegramSenderDemon extends InnerDemon
 
     protected function run(): void
     {
-
         $this->updates->work();
     }
 
-    protected function handleFallback(string $message): void
+    protected function handleException(string $message): void
     {
-        $this->updates->handleFallback($message);
+        $this->updates->handleException($message);
+    }
+
+    protected function handleError(string $message): void
+    {
+        $this->updates->handleError($message);
     }
 }

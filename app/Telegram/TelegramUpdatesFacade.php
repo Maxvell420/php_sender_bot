@@ -60,6 +60,12 @@ class TelegramUpdatesFacade extends Builder
         $handler->handleErrorUpdate($message);
     }
 
+    public function handleException(string $message): void
+    {
+        $handler = $this->buildErrorHandler();
+        $handler->handleException($message);
+    }
+
     public function handleWrongGetUpdates(string $message): void
     {
         $handler = $this->buildTelegramWrongMessageHandler();

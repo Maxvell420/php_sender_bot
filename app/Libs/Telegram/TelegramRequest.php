@@ -21,6 +21,7 @@ class TelegramRequest
         $url = $this->buildUrlFromAction(TelegramActions::getUpdates, $offset, $timeout);
         // Это параметры и переделать
         $data = ['timeout' => $timeout];
+
         return $this->sendRequest($url, data: $data);
     }
 
@@ -83,6 +84,7 @@ class TelegramRequest
 
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $timeout + 1);
         curl_setopt($curl, CURLOPT_TIMEOUT, $timeout + 1);
+
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $decoded_response = json_decode($response, true);

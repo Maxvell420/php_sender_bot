@@ -43,9 +43,8 @@ class Updates
         }
 
         $update_id = $this->telegramFacade->getNextUpdateId();
-
         try {
-            $updates = $this->telegramRequestFacade->getUpdates($update_id, 15);
+            $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
         } catch (TelegramApiException $e) {
             $this->telegramFacade->handleWrongGetUpdates($e->getMessage());
             return;
@@ -101,6 +100,7 @@ class Updates
     {
         $update = new Update;
         $update->update_id = $update_id;
+
         $this->telegramFacade->persistUpdate($update);
     }
 
@@ -109,9 +109,14 @@ class Updates
         return $class::from($data);
     }
 
-    public function handleFallback(string $message): void
+    public function handleError(string $message): void
     {
         // Добавить тут обработчик ?
         $this->telegramFacade->handleErrorUpdate($message);
+    }
+
+    public function handleException(string $message): void
+    {
+        $this->telegramFacade->handleException($message);
     }
 }
