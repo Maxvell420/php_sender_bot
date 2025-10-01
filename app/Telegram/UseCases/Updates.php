@@ -44,7 +44,7 @@ class Updates {
             $update_id = $this->telegramFacade->getNextUpdateId();
 
             try {
-                $updates = $this->telegramRequestFacade->getUpdates($update_id, 10);
+                $updates = $this->telegramRequestFacade->getUpdates($update_id, 15);
             } catch (TelegramApiException $e) {
                 $this->telegramFacade->handleWrongGetUpdates($e->getMessage());
                 continue;
