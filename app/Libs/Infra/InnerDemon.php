@@ -16,7 +16,7 @@ abstract class InnerDemon {
 
     protected abstract function handleFallback(string $message): void;
 
-    public function runJob(): void {
+    final public function runJob(): void {
         try {
             $this->run();
         } catch (Throwable $e) {
