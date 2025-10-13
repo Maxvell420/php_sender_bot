@@ -43,7 +43,8 @@ class JobsHandler
         $messages_send = 0;
 
         foreach ($userJobs as $user) {
-            if ($messages_send == 1) {
+            $count++;
+            if ($messages_send == 20) {
                 sleep(1);
                 return;
             }
@@ -52,7 +53,7 @@ class JobsHandler
                 continue;
             }
 
-            $count++;
+
             $message['chat_id'] = $user->actor_id;
 
             try {
