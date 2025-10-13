@@ -4,7 +4,7 @@ namespace App\Telegram\UseCases;
 
 use App\Libs\Telegram\TelegramActions;
 use App\Libs\Telegram\TelegramApiException;
-use App\Models\ {
+use App\Models\{
     Job,
     JobUser
 };
@@ -12,7 +12,8 @@ use App\Telegram\Enums;
 use App\Telegram\ErrorHandlers\TelegramMessage;
 use App\Telegram\TelegramRequestFacade;
 
-class JobsHandler {
+class JobsHandler
+{
 
     public function __construct(
         private TelegramRequestFacade $telegramRequest,
@@ -20,13 +21,15 @@ class JobsHandler {
         private TelegramMessage $msgErrHandler
     ) {}
 
-    public function handleJob(Job $job): void {
+    public function handleJob(Job $job): void
+    {
         match ($job->job_type) {
             Enums\JobTypes::Create_post->value => $this->handleSendPost($job),
         };
     }
 
-    private function handleSendPost(Job $job): void {
+    private function handleSendPost(Job $job): void
+    {
         $count = 0;
 
         $update = json_decode($job->json, true);
@@ -39,13 +42,13 @@ class JobsHandler {
         $message = $update['message'];
         $messages_send = 0;
 
-        foreach($userJobs as $user) {
-            if( $messages_send == 20 ) {
+        foreach ($userJobs as $user) {
+            if ($messages_send == 1) {
                 sleep(1);
                 return;
             }
 
-            if( $user->isCompleted() ) {
+            if ($user->isCompleted()) {
                 continue;
             }
 
@@ -71,7 +74,7 @@ class JobsHandler {
             $messages_send++;
         }
 
-        $message = $this->messageBuilder->buildMessage(chat_id:$job->actor_id, text:"Пост был разослан $count пользователям");
+        $message = $this->messageBuilder->buildMessage(chat_id: $job->actor_id, text: "Пост был разослан $count пользователям");
         $this->telegramRequest->sendMessage($message);
         $job->complete();
         $job->save();
