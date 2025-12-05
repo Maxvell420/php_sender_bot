@@ -26,20 +26,7 @@ class MigrateUsers extends Command {
      * Execute the console command.
      */
     public function handle() {
-        $path = 'users.txt';
-
-        if( !file_exists($path) ) {
-            $this->error('File not found');
-            return;
-        }
-
-        $file = fopen($path, "r");
-
-        while( ($line = fgets($file)) !== false ) {
-            $user_data = json_decode($line, true);
-            User::create($user_data);
-        }
-
-        fclose($file);
+        $Post = Post::where('id', '=', 1)->first();
+        dd($Post);
     }
 }
