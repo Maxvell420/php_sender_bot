@@ -3,6 +3,7 @@
 namespace App\Libs\Infra;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
 
 abstract class BaseModelRepository {
 
@@ -16,5 +17,9 @@ abstract class BaseModelRepository {
     // TODO: Возвращать обьект чтобы удобно было писать тесты
     public function persist(Model $model): void {
         $model->save();
+    }
+
+    public function all(): Collection {
+        return $this->model->all();
     }
 }

@@ -18,7 +18,6 @@ use App\Telegram\Exceptions\TelegramBaseException;
 use App\Telegram\TelegramRequestFacade;
 use App\Telegram\Values\CallbackDataValues;
 use CURLFile;
-use Illuminate\Database\Eloquent\Collection;
 
 class MessageUpdater {
 
@@ -93,6 +92,7 @@ class MessageUpdater {
         match ($case) {
             Enums\Commands::Start => $this->handleStart($data, $user, $state),
             Enums\Commands::Logs  => $this->handleLogs($data, $user),
+            Enums\Commands::Users => $this->handleGetUserInfo($data, $user),
             default => ''
         };
     }
@@ -135,6 +135,42 @@ class MessageUpdater {
             $line = $log->id . ":" . $info['message'] . ' ' . $log->created_at . $log->data;
 
             fwrite($file, $line . PHP_EOL);
+        }
+
+        fclose($file);
+
+        $file = new CURLFile($path);
+
+        $message = $this->messageBuilder->buildFile($user->tg_id, $file);
+        $this->telegramRequest->sendFile($message);
+        unlink($path);
+    }
+
+    private function handleGetUserInfo(MessageUpdate $data, User $user): void {
+        if( !$user->isAdmin() ) {
+            $this->sendDummyMessage($user->tg_id);
+            return;
+        }
+
+        $users = $this->userRepository->all();
+
+        $path = 'users.txt';
+
+        if( file_exists($path) ) {
+            unlink($path);
+        }
+
+        $file = fopen($path, "w");
+
+        if( !$file ) {
+            throw new TelegramBaseException('Не удалось записать файл');
+        }
+
+        foreach($users as $db_user) {
+            $user_data = $db_user->toArray();
+            $info = json_encode($user_data);
+
+            fwrite($file, $info . PHP_EOL);
         }
 
         fclose($file);
