@@ -26,7 +26,7 @@ class MigrateUsers extends Command {
      * Execute the console command.
      */
     public function handle() {
-        $path = 'users.txt';
+        $path = 'posts.txt';
 
         if( !file_exists($path) ) {
             $this->error('File not found');
