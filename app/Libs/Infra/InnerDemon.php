@@ -7,8 +7,7 @@ use Error;
 use Exception;
 
 // Родоначальник демонов, он обрабатывает все ошибки которые прилетают с демонов которые демоны не обработали
-abstract class InnerDemon
-{
+abstract class InnerDemon {
 
     public function __construct(protected Context $cntx) {}
 
@@ -17,9 +16,8 @@ abstract class InnerDemon
 
     protected abstract function handleError(string $message): void;
     protected abstract function handleException(string $message): void;
-    final public function runJob(): void
-    {
-        while (true) {
+    final public function runJob(): void {
+        while( true ) {
             try {
                 $this->run();
             } catch (Exception $e) {

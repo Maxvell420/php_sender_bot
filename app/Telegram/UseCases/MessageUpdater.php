@@ -154,7 +154,7 @@ class MessageUpdater {
 
         $posts = Post::all();
 
-        $path = 'users.txt';
+        $path = 'posts.txt';
 
         if( file_exists($path) ) {
             unlink($path);
