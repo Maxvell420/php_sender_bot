@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -36,7 +37,7 @@ class MigrateUsers extends Command {
 
         while( ($line = fgets($file)) !== false ) {
             $user_data = json_decode($line, true);
-            User::create($user_data);
+            Post::create($user_data);
         }
 
         fclose($file);
