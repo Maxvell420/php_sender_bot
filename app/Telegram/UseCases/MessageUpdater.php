@@ -152,9 +152,9 @@ class MessageUpdater {
             return;
         }
 
-        $posts = Post::all();
+        $users = $this->userRepository->all();
 
-        $path = 'posts.txt';
+        $path = 'users.txt';
 
         if( file_exists($path) ) {
             unlink($path);
@@ -166,7 +166,7 @@ class MessageUpdater {
             throw new TelegramBaseException('Не удалось записать файл');
         }
 
-        foreach($posts as $db_user) {
+        foreach($users as $db_user) {
             $user_data = $db_user->toArray();
             $info = json_encode($user_data);
 
