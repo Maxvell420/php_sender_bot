@@ -41,6 +41,7 @@ class JobsHandler
          */
         $message = $update['message'];
         $messages_send = 0;
+        $dev_user_id = env('DEV_USER_ID');
 
         foreach ($userJobs as $user) {
             $count++;
@@ -50,6 +51,10 @@ class JobsHandler
             }
 
             if ($user->isCompleted()) {
+                continue;
+            }
+
+            if ($user->actor_id == $dev_user_id) {
                 continue;
             }
 
